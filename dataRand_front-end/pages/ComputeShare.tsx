@@ -46,10 +46,12 @@ export default function ComputeShare() {
     childrenEnrolled: 0
   });
   
-  const [howItWorksOpen, setHowItWorksOpen] = useState(() => {
+  const [howItWorksOpen, setHowItWorksOpen] = useState(true);
+
+  useEffect(() => {
     const stored = localStorage.getItem('computeShare_howItWorksViewed');
-    return stored !== 'true';
-  });
+    setHowItWorksOpen(stored !== 'true');
+  }, []);
   
   const phoneIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const laptopIntervalRef = useRef<NodeJS.Timeout | null>(null);
