@@ -67,7 +67,7 @@ export default function Auth() {
             Your Platform for Earning and Creating
           </h1>
           <p className="text-muted-foreground text-lg mb-10">
-            One account. Complete freedom. Earn from tasks or create your own—switch between both whenever you want. No barriers, no separate roles, just seamless opportunity.
+            One account. Complete freedom. Earn from tasks or create your own switch between both whenever you want. No barriers, no separate roles, just seamless opportunity.
           </p>
 
           <ClawDivider className="mb-10 opacity-30" />

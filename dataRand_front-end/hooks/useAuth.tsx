@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // No existing profile, create one
             const { data: newProfile, error: createError } = await supabase
               .from("profiles")
-              .insert({ auth_id: user.id, email: user.email || null }) // Assuming email is available from Privy user object
+              .insert({ id: user.id, email: user.email?.address || null }) // Use 'id' for auth_id and extract email address
               .select("*")
               .single();
 
