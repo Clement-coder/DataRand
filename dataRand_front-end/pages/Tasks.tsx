@@ -185,6 +185,7 @@ useEffect(() => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <p className="text-sm text-muted-foreground">No profile found. Please sign in.</p>
+          <Button onClick={() => router.push("/auth")}>Go to Sign In</Button>
         </div>
       </div>
     );

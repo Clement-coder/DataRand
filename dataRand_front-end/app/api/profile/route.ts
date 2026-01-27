@@ -17,12 +17,20 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("Supabase environment variables are not set.");
+      return NextResponse.json(
+        { message: "Server configuration error: Supabase URL and Service Role Key are required." },
+        { status: 500 }
+      );
+    }
+
     const cookieStore = nextCookies();
 
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
       // Use the service_role key to bypass RLS for profile creation
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
       {
         cookies: {
           async getAll() {
