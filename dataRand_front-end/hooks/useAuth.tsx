@@ -55,9 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setProfile(existingProfile as Profile);
           } else {
             // No existing profile, create one
+            // Extract email address properly from Privy user object
+            const emailAddress = user.email?.address || null;
+            const fullName = user.google?.name || user.twitter?.name || emailAddress?.split("@")[0] || null;
+            
             const { data: newProfile, error: createError } = await supabase
               .from("profiles")
-              .insert({ id: user.id, email: user.email?.address || null }) // Use 'id' for auth_id and extract email address
+              .insert({ 
+                auth_id: user.id,  // Use auth_id field
+                email: emailAddress,  // Extract the address string
+                full_name: fullName  // Add full_name if available
+              })
               .select("*")
               .single();
 
@@ -66,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setProfile(null);
             } else {
               setProfile(newProfile as Profile);
-              console.log("New user signed up! Profile data:", newProfile, "User email:", user.email); // Log new user data and email
+              console.log("New user signed up! Profile data:", newProfile, "User email:", emailAddress);
             }
           }
           setLoading(false);
