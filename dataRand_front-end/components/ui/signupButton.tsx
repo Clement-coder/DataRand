@@ -12,24 +12,19 @@ export default function SignUpButton() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // prevents duplicate profile creation
+  // Prevents duplicate profile creation
   const hasCreatedProfile = useRef(false);
 
   const handleSignUp = () => {
-    signIn(); // open Privy modal
+    signIn(); // Open Privy modal
   };
 
   useEffect(() => {
     if (!user) return;
 
-    // If profile already exists → redirect
+    // If profile already exists → redirect to tasks
     if (profile) {
-      // For existing users, redirect based on their established role
-      if (profile.role === "client") {
-        router.push("/client/tasks");
-      } else {
-        router.push("/tasks");
-      }
+      router.push("/tasks");
       return;
     }
 
@@ -49,7 +44,7 @@ export default function SignUpButton() {
           },
           body: JSON.stringify({
             auth_id: user.id,
-            role: "worker", // Default role for all new users
+            role: "worker", // Default role (can be changed later if needed for backend logic)
             email: email,
             full_name: fullName,
           }),
@@ -60,7 +55,7 @@ export default function SignUpButton() {
           throw new Error(err.message || "Failed to create profile");
         }
 
-        // Redirect all new users to the main tasks page
+        // Redirect all new users to the tasks page
         router.push("/tasks");
 
       } catch (err) {
