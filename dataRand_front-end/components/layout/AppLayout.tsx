@@ -39,6 +39,7 @@ type NavItem = {
 const workerNavItems: NavItem[] = [
   { label: "Tasks", href: "/tasks", icon: TaskIcon },
   { label: "My Work", href: "/my-work", icon: WorkIcon },
+  { label: "Create Task", href: "/client/create", icon: Plus },
   { label: "ComputeShare", href: "/compute", icon: ComputeIcon },
   { label: "Earnings", href: "/earnings", icon: EarningsIcon },
 ];
@@ -161,6 +162,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <div className="flex flex-col">
                     <span className="font-semibold">
                       {profile?.full_name || profile?.email?.split("@")[0]}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {profile?.email}
                     </span>
                     <Badge variant="outline" className="w-fit text-xs capitalize mt-1 bg-primary/10 text-primary border-primary/30">
                       {profile?.role}

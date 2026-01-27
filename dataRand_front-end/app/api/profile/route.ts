@@ -3,7 +3,7 @@ import { cookies as nextCookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const { auth_id, role } = await request.json();
+  const { auth_id, role, email, full_name } = await request.json();
 
   if (!auth_id || !role) {
     return NextResponse.json(
@@ -27,14 +27,14 @@ export async function POST(request: Request) {
           cookiesToSet.forEach(({ name, value, options }) => {
             resolvedCookieStore.set(name, value, options);
           });
-        }
+        },
       },
     }
   );
 
   const { data, error } = await supabase
     .from("profiles")
-    .insert([{ auth_id, role }]);
+    .insert([{ auth_id, role, email, full_name }]);
 
   if (error) {
     return NextResponse.json(

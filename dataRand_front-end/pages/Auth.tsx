@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { GeometricBackground, NdebeleBorder, ClawDivider, CornerAccent } from "@/components/ui/GeometricBackground";
 import { DataRandLogo, TaskIcon, ShieldIcon, WorkIcon, PowerIcon, ArrowRightIcon, StrengthIcon } from "@/components/icons/DataRandIcons";
@@ -121,6 +122,17 @@ export default function Auth() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pb-12 flex flex-col items-center pt-8">
+            <div className="flex flex-wrap gap-2 justify-center mb-6">
+              <Badge variant="secondary" className="text-xs">
+                🚀 Quick Setup
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                💰 Instant Earnings
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                🌍 Global Impact
+              </Badge>
+            </div>
             <SignUpButton />
           </CardContent>
         </Card>
