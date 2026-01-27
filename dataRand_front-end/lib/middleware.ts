@@ -5,37 +5,42 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  // Get the pathname
   const path = request.nextUrl.pathname;
 
-  // Check if user is trying to access the auth page
-  if (path === "/auth") {
-    // Check for Privy auth token in cookies
-    // Adjust the cookie name based on your Privy configuration
-    const privyToken = request.cookies.get("privy-token")?.value ||
-                       request.cookies.get("privy-id-token")?.value ||
-                       request.cookies.get("privy-refresh-token")?.value;
+  const privyToken =
+    request.cookies.get("privy-token")?.value ||
+    request.cookies.get("privy-id-token")?.value ||
+    request.cookies.get("privy-refresh-token")?.value;
 
-    // If user has a token, redirect them to tasks
-    if (privyToken) {
-      return NextResponse.redirect(new URL("/tasks", request.url));
-    }
+  const protectedRoutes = [
+    "/tasks",
+    "/my-work",
+    "/earnings",
+    "/compute",
+    "/education-impact",
+    "/client",
+    "/notifications",
+  ];
+
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    path.startsWith(route)
+  );
+
+  // If user is trying to access a protected route without a token, redirect to auth
+  if (isProtectedRoute && !privyToken) {
+    return NextResponse.redirect(new URL("/auth", request.url));
   }
 
-  // For all other routes, continue normally
+  // If user is trying to access the auth page with a token, redirect to tasks
+  if (path === "/auth" && privyToken) {
+    return NextResponse.redirect(new URL("/tasks", request.url));
+  }
+
   return NextResponse.next();
 }
 
-// Configure which routes this middleware should run on
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };
