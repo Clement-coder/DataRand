@@ -29,6 +29,7 @@ import {
   EducationIcon,
 } from "@/components/icons/DataRandIcons";
 import { LogOut, Settings, Menu, X, Plus, Loader2 } from "lucide-react";
+import { useNotifications } from "@/hooks/useNotifications";
 import { motion } from "framer-motion";
 import {
   Dialog,
@@ -61,6 +62,7 @@ const clientNavItems: NavItem[] = [
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -135,9 +137,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <Link href="/notifications">
               <Button variant="ghost" size="icon" className="relative group">
                 <NotificationIcon size={22} className="group-hover:text-primary transition-colors" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground animate-pulse">
-                  3
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-pulse">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </Button>
             </Link>
 
@@ -247,7 +251,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="container py-6 relative">
+      <main className="container py-3 sm:py-6 px-4 sm:px-6 lg:px-8 relative">
         <CornerAccent position="top-right" className="opacity-10" />
         {children}
       </main>

@@ -69,16 +69,48 @@ export function useUser() {
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!privyUser || !profile) return { error: new Error("Not authenticated") }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update(updates)
-      .eq("auth_id", privyUser.id)
+    try {
+      // If this is a temporary profile, create it in the database first
+      if (profile.id.startsWith('temp-id-')) {
+        const emailAddress = privyUser?.email?.address || null;
+        const fullName = privyUser?.google?.name || privyUser?.twitter?.name || privyUser?.github?.name || emailAddress?.split("@")[0] || null;
 
-    if (!error) {
-      setProfile({ ...profile, ...updates })
+        const { data: newProfile, error: createError } = await supabase
+          .from("profiles")
+          .insert({
+            auth_id: privyUser.id,
+            email: emailAddress,
+            full_name: fullName,
+            role: "worker",
+            ...updates
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          console.error("Error creating profile:", createError)
+          return { error: createError }
+        }
+
+        setProfile(newProfile as Profile)
+        return { error: null }
+      }
+
+      // Update existing profile
+      const { error } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("auth_id", privyUser.id)
+
+      if (!error) {
+        setProfile({ ...profile, ...updates })
+      }
+
+      return { error }
+    } catch (err) {
+      console.error("Profile update error:", err)
+      return { error: err as Error }
     }
-
-    return { error }
   }
 
   return {

@@ -242,20 +242,20 @@ useEffect(() => {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
         {/* Development Tools */}
         {process.env.NODE_ENV === 'development' && <TaskSeeder />}
 
         {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-display font-bold flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <PowerIcon size={22} className="text-primary" />
+        <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-center sm:text-left">
+            <h1 className="text-xl sm:text-2xl font-display font-bold flex items-center justify-center sm:justify-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary/10">
+                <PowerIcon size={18} className="sm:w-[22px] sm:h-[22px] text-primary" />
               </div>
               Available Challenges
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
               Accept tasks to prove your worth and earn rewards
             </p>
           </div>
@@ -263,23 +263,25 @@ useEffect(() => {
             variant="outline"
             onClick={fetchTasks}
             disabled={loading}
-            className="w-fit gap-2"
+            className="w-full sm:w-fit gap-2 h-9 sm:h-10"
           >
-            <RefreshIcon size={18} className={loading ? "animate-spin" : ""} />
-            Refresh
+            <RefreshIcon size={16} className={`sm:w-[18px] sm:h-[18px] ${loading ? "animate-spin" : ""}`} />
+            <span className="text-sm sm:text-base">Refresh</span>
           </Button>
         </div>
 
         {/* Debug Info (remove in production) */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="bg-muted/50 p-4 rounded-lg text-sm">
+          <div className="bg-muted/50 p-3 sm:p-4 rounded-lg text-xs sm:text-sm">
             <p><strong>Debug Info:</strong></p>
-            <p>Profile ID: {profile?.id}</p>
-            <p>Tasks loaded: {tasks.length}</p>
-            <p>Task types loaded: {taskTypes.length}</p>
-            <p>Selected type: {selectedType || 'All'}</p>
-            <p>Search query: "{searchQuery}"</p>
-            <p>Filtered tasks: {filteredTasks.length}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1">
+              <p>Profile ID: {profile?.id}</p>
+              <p>Tasks loaded: {tasks.length}</p>
+              <p>Task types loaded: {taskTypes.length}</p>
+              <p>Selected type: {selectedType || 'All'}</p>
+              <p>Search query: "{searchQuery}"</p>
+              <p>Filtered tasks: {filteredTasks.length}</p>
+            </div>
           </div>
         )}
 
@@ -305,24 +307,24 @@ useEffect(() => {
 
         {/* Tasks Grid */}
         {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-56 rounded-xl" />
+              <Skeleton key={i} className="h-48 sm:h-56 rounded-xl" />
             ))}
           </div>
         ) : filteredTasks.length === 0 ? (
-          <div className="relative flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-border">
+          <div className="relative flex flex-col items-center justify-center py-12 sm:py-20 text-center rounded-2xl border border-dashed border-border">
             <GeometricBackground variant="ndebele" opacity={0.03} />
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted mb-5">
-              <TaskIcon size={40} className="text-muted-foreground" />
+            <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-muted mb-4 sm:mb-5">
+              <TaskIcon size={32} className="sm:w-10 sm:h-10 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">No challenges available</h3>
-            <p className="text-muted-foreground max-w-sm">
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">No challenges available</h3>
+            <p className="text-muted-foreground max-w-sm text-sm sm:text-base px-4">
               The hunting grounds are quiet. Check back soon — new tasks are posted regularly.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filteredTasks.map((task) => (
               <TaskCard
                 key={task.id}

@@ -19,7 +19,11 @@ export function middleware(request: NextRequest) {
     "/compute",
     "/education-impact",
     "/client",
+    "/client/create",
+    "/client/tasks",
     "/notifications",
+    "/profile",
+    "/settings",
   ];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
