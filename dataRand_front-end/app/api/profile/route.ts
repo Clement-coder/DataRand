@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     
     const { data, error } = await supabase
       .from("profiles")
-      .insert([{ auth_id, email, full_name }])
+      .insert([{ auth_id, email, full_name, role: "worker" }])
       .select()
       .single();
 

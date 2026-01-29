@@ -15,7 +15,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (!authLoading && user && profile) {
-      router.push("/tasks");
+      router.push("/my-work");
     }
   }, [user, profile, authLoading, router]);
 
