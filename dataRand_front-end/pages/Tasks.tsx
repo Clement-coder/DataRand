@@ -15,6 +15,8 @@ import { GeometricBackground } from "@/components/ui/GeometricBackground";
 import withAuth from "@/components/withAuth";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
+import { TaskSeeder } from "@/components/dev/TaskSeeder";
+
 import {
   RefreshIcon,
   PowerIcon,
@@ -40,8 +42,13 @@ function Tasks() {
     setLoading(true);
     try {
       // Fetch task types
-      const { data: types } = await supabase.from("task_types").select("*");
-      if (types) setTaskTypes(types as TaskType[]);
+      const { data: types, error: typesError } = await supabase.from("task_types").select("*");
+      if (typesError) {
+        console.error("Error fetching task types:", typesError);
+      } else {
+        console.log("Task types fetched:", types);
+        setTaskTypes(types as TaskType[]);
+      }
 
       // Fetch available tasks
       let query = supabase
@@ -64,6 +71,8 @@ function Tasks() {
           variant: "destructive",
         });
       } else {
+        console.log("Tasks fetched:", data);
+        console.log("Number of available tasks:", data?.length || 0);
         setTasks((data as Task[]) || []);
       }
     } catch (err) {
@@ -71,7 +80,7 @@ function Tasks() {
     } finally {
       setLoading(false);
     }
-  }, [profile, selectedType]); // Only depend on profile and selectedType, NOT toast
+  }, [profile, selectedType, toast]);
 
   // Fetch tasks only once when profile loads or selectedType changes
   useEffect(() => {
@@ -182,6 +191,9 @@ useEffect(() => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        {/* Development Tools */}
+        {process.env.NODE_ENV === 'development' && <TaskSeeder />}
+
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -205,6 +217,19 @@ useEffect(() => {
             Refresh
           </Button>
         </div>
+
+        {/* Debug Info (remove in production) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="bg-muted/50 p-4 rounded-lg text-sm">
+            <p><strong>Debug Info:</strong></p>
+            <p>Profile ID: {profile?.id}</p>
+            <p>Tasks loaded: {tasks.length}</p>
+            <p>Task types loaded: {taskTypes.length}</p>
+            <p>Selected type: {selectedType || 'All'}</p>
+            <p>Search query: "{searchQuery}"</p>
+            <p>Filtered tasks: {filteredTasks.length}</p>
+          </div>
+        )}
 
         {/* Search & Filters */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center">
