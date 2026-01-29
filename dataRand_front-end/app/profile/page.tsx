@@ -11,7 +11,7 @@ import { BarChart, DollarSign, CheckCircle, Star, Zap, Activity } from "lucide-r
 function ProfilePage() {
   const { profile } = useAuth();
 
-  const getInitials = (name: string | null, email: string | null) => {
+  const getInitials = (name: string | null | undefined, email: string | null | undefined) => {
     if (name) {
       return name
         .split(" ")
