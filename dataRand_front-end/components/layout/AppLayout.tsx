@@ -56,8 +56,9 @@ const workerNavItems: NavItem[] = [
 
 const clientNavItems: NavItem[] = [
   { label: "Dashboard", href: "/client", icon: PowerIcon },
-  { label: "Create Task", href: "/client/create", icon: TaskIcon },
+  { label: "Create Task", href: "/client/create", icon: Plus },
   { label: "My Tasks", href: "/client/tasks", icon: WorkIcon },
+  { label: "Available Tasks", href: "/tasks", icon: TaskIcon },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {

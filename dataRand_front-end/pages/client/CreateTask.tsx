@@ -79,19 +79,8 @@ export default function CreateTask() {
       router.push("/auth");
       return;
     }
-    if (!authLoading && profile) {
-      console.log("Profile found:", profile.role);
-      if (profile.role !== "client") {
-        console.log("User is not a client, redirecting to tasks");
-        toast({
-          title: "Access Denied",
-          description: "Only clients can create tasks. Switch to a client account to access this feature.",
-          variant: "destructive",
-        });
-        router.push("/tasks");
-      }
-    }
-  }, [authLoading, profile, router, toast]);
+    // Remove client role restriction - allow all users to create tasks
+  }, [authLoading, profile, router]);
 
   useEffect(() => {
     const fetchTaskTypes = async () => {
