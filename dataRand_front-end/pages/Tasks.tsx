@@ -23,6 +23,7 @@ import {
   SearchIcon,
   TaskIcon,
 } from "@/components/icons/DataRandIcons";
+import { testSupabaseConnection, checkTasksTable } from "@/lib/supabase-test";
 
 function Tasks() {
   const { profile } = useAuth();
@@ -37,50 +38,101 @@ function Tasks() {
 
   // Use useCallback to memoize fetchTasks and prevent infinite loops
   const fetchTasks = useCallback(async () => {
-    if (!profile) return; // Don't fetch if no profile
+    if (!profile) {
+      console.log("No profile found, skipping task fetch");
+      return;
+    }
     
     setLoading(true);
     try {
-      // Fetch task types
-      const { data: types, error: typesError } = await supabase.from("task_types").select("*");
+      console.log("Fetching tasks for profile:", profile.id);
+      
+      // Fetch task types first
+      const { data: types, error: typesError } = await supabase
+        .from("task_types")
+        .select("*");
+        
       if (typesError) {
         console.error("Error fetching task types:", typesError);
-      } else {
-        console.log("Task types fetched:", types);
-        setTaskTypes(types as TaskType[]);
-      }
-
-      // Fetch available tasks
-      let query = supabase
-        .from("tasks")
-        .select("*, task_type:task_types(*)")
-        .eq("status", "available")
-        .order("created_at", { ascending: false });
-
-      if (selectedType) {
-        query = query.eq("task_type_id", selectedType);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching tasks:", error);
         toast({
           title: "Error",
-          description: "Failed to load tasks. Please try again.",
+          description: "Failed to load task types. Please try again.",
           variant: "destructive",
         });
       } else {
-        console.log("Tasks fetched:", data);
-        console.log("Number of available tasks:", data?.length || 0);
-        setTasks((data as Task[]) || []);
+        console.log("Task types fetched successfully:", types?.length || 0);
+        setTaskTypes(types as TaskType[] || []);
+      }
+
+      // Build task query
+      let query = supabase
+        .from("tasks")
+        .select(`
+          *,
+          task_type:task_types(*),
+          client:profiles(*)
+        `)
+        .eq("status", "available")
+        .order("created_at", { ascending: false });
+
+      // Apply type filter if selected
+      if (selectedType) {
+        query = query.eq("task_type_id", selectedType);
+        console.log("Filtering by task type:", selectedType);
+      }
+
+      console.log("Executing task query...");
+      const { data: tasksData, error: tasksError } = await query;
+
+      if (tasksError) {
+        console.error("Error fetching tasks:", tasksError);
+        toast({
+          title: "Failed to fetch tasks",
+          description: `Error: ${tasksError.message}. Please check your connection and try again.`,
+          variant: "destructive",
+        });
+        setTasks([]);
+      } else {
+        console.log("Tasks fetched successfully:", tasksData?.length || 0);
+        setTasks((tasksData as Task[]) || []);
       }
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Unexpected error in fetchTasks:", err);
+      toast({
+        title: "Connection Error",
+        description: "Unable to connect to the server. Please check your internet connection.",
+        variant: "destructive",
+      });
+      setTasks([]);
     } finally {
       setLoading(false);
     }
   }, [profile, selectedType, toast]);
+
+  // Test connection on mount
+  useEffect(() => {
+    const testConnection = async () => {
+      const connectionTest = await testSupabaseConnection();
+      if (!connectionTest.success) {
+        toast({
+          title: "Connection Issue",
+          description: `Database connection failed: ${connectionTest.error}`,
+          variant: "destructive",
+        });
+      }
+      
+      const tasksTableTest = await checkTasksTable();
+      if (!tasksTableTest.success) {
+        toast({
+          title: "Database Issue",
+          description: `Tasks table not accessible: ${tasksTableTest.error}`,
+          variant: "destructive",
+        });
+      }
+    };
+    
+    testConnection();
+  }, [toast]);
 
   // Fetch tasks only once when profile loads or selectedType changes
   useEffect(() => {
@@ -232,8 +284,8 @@ useEffect(() => {
         )}
 
         {/* Search & Filters */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1 max-w-full sm:max-w-md">
             <SearchIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search tasks..."
@@ -242,11 +294,13 @@ useEffect(() => {
               className="pl-10 h-11"
             />
           </div>
-          <TaskFilters
-            taskTypes={taskTypes}
-            selectedType={selectedType}
-            onSelectType={setSelectedType}
-          />
+          <div className="w-full sm:w-auto">
+            <TaskFilters
+              taskTypes={taskTypes}
+              selectedType={selectedType}
+              onSelectType={setSelectedType}
+            />
+          </div>
         </div>
 
         {/* Tasks Grid */}

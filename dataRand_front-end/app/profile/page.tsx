@@ -13,54 +13,54 @@ function ProfilePage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
         {/* Profile Header */}
         <Card className="overflow-hidden">
           <CardHeader className="p-0">
-            <div className="h-24 bg-gradient-to-r from-primary/20 to-secondary/20" />
+            <div className="h-16 sm:h-24 bg-gradient-to-r from-primary/20 to-secondary/20" />
           </CardHeader>
-          <CardContent className="p-6 flex items-start gap-6 -mt-12">
+          <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4 sm:gap-6 -mt-8 sm:-mt-12">
             <ProfileAvatar
               src={profile?.avatar_url}
               name={profile?.full_name}
               email={profile?.email}
               size="xl"
-              className="border-4 border-background ring-2 ring-primary"
+              className="border-4 border-background ring-2 ring-primary mx-auto sm:mx-0"
             />
-            <div className="pt-12">
-              <h1 className="text-2xl font-bold">{profile?.full_name}</h1>
-              <p className="text-muted-foreground">{profile?.email}</p>
+            <div className="pt-8 sm:pt-12 text-center sm:text-left w-full sm:w-auto">
+              <h1 className="text-xl sm:text-2xl font-bold">{profile?.full_name}</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">{profile?.email}</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${profile?.total_earnings.toFixed(2)}</div>
+              <div className="text-xl sm:text-2xl font-bold">${profile?.total_earnings.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium">Tasks Completed</CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{profile?.tasks_completed}</div>
+              <div className="text-xl sm:text-2xl font-bold">{profile?.tasks_completed}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium">Reputation Score</CardTitle>
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{profile?.reputation_score}</div>
+              <div className="text-xl sm:text-2xl font-bold">{profile?.reputation_score}</div>
             </CardContent>
           </Card>
         </div>
@@ -68,32 +68,44 @@ function ProfilePage() {
         {/* Skill Progression */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><BarChart className="h-5 w-5" /> Skill Progression</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <BarChart className="h-5 w-5" /> Skill Progression
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-2">Your current skill tier is:</p>
-            <Badge className="text-lg" variant="secondary">Beginner</Badge>
-            <p className="text-sm text-muted-foreground mt-4">Complete more tasks accurately to advance to 'Verified' and 'Expert' tiers, unlocking higher-value work.</p>
+          <CardContent className="space-y-3 sm:space-y-4">
+            <p className="text-muted-foreground text-sm sm:text-base">Your current skill tier is:</p>
+            <Badge className="text-base sm:text-lg px-3 py-1" variant="secondary">Beginner</Badge>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Complete more tasks accurately to advance to 'Verified' and 'Expert' tiers, unlocking higher-value work.
+            </p>
           </CardContent>
         </Card>
 
         {/* Daily Impact Cards */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Zap className="h-5 w-5" /> Daily Impact</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Zap className="h-5 w-5" /> Daily Impact
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">A summary of your daily contributions. (Coming soon)</p>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              A summary of your daily contributions. (Coming soon)
+            </p>
           </CardContent>
         </Card>
 
         {/* Live Resource Transparency */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" /> Live Resource Transparency</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Activity className="h-5 w-5" /> Live Resource Transparency
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">Real-time view of your device's contribution. (Coming soon)</p>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Real-time view of your device's contribution. (Coming soon)
+            </p>
           </CardContent>
         </Card>
 

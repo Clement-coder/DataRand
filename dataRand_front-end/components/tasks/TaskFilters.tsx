@@ -25,12 +25,12 @@ export function TaskFilters({
   onSelectType,
 }: TaskFiltersProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
       <Button
         variant={selectedType === null ? "default" : "outline"}
         size="sm"
         onClick={() => onSelectType(null)}
-        className={selectedType === null ? "gradient-primary text-primary-foreground" : ""}
+        className={`${selectedType === null ? "gradient-primary text-primary-foreground" : ""} flex-shrink-0`}
       >
         <TaskIcon size={16} className="mr-1.5" />
         All Tasks
@@ -46,10 +46,15 @@ export function TaskFilters({
             variant={isSelected ? "default" : "outline"}
             size="sm"
             onClick={() => onSelectType(type.id)}
-            className={isSelected ? "gradient-primary text-primary-foreground" : ""}
+            className={`${isSelected ? "gradient-primary text-primary-foreground" : ""} flex-shrink-0`}
           >
             <Icon size={16} className="mr-1.5" />
-            {type.name.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+            <span className="hidden sm:inline">
+              {type.name.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+            </span>
+            <span className="sm:hidden">
+              {type.name.split("_")[0].replace(/\b\w/g, (l) => l.toUpperCase())}
+            </span>
           </Button>
         );
       })}

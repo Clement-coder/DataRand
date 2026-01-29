@@ -2,21 +2,23 @@
 
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import withAuth from "@/components/withAuth";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Bell, Shield, Palette, Globe, Smartphone, Upload, Save } from "lucide-react";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { toast } from "sonner";
+import { 
+  User, Bell, Palette, Globe, Smartphone, Shield, 
+  Upload, Save 
+} from "lucide-react";
 
-function SettingsPage() {
+export default function SettingsPage() {
   const { profile, updateProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -63,29 +65,30 @@ function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your account and preferences</p>
+      <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
+        <div className="text-center sm:text-left">
+          <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Manage your account and preferences</p>
         </div>
 
         {/* Profile Settings */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <User className="h-5 w-5" />
               Profile Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-6">
+          <CardContent className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
               <ProfileAvatar
                 src={formData.avatar_url}
                 name={formData.full_name}
                 email={formData.email}
                 size="lg"
+                className="mx-auto sm:mx-0"
               />
-              <div>
+              <div className="text-center sm:text-left">
                 <Label htmlFor="avatar-upload" className="cursor-pointer">
                   <Button variant="outline" size="sm" asChild>
                     <span>
@@ -101,13 +104,13 @@ function SettingsPage() {
                   className="hidden"
                   onChange={handleAvatarUpload}
                 />
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   JPG, PNG or GIF. Max size 2MB.
                 </p>
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="full_name">Full Name</Label>
                 <Input
@@ -127,12 +130,12 @@ function SettingsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
               <Badge variant="secondary">{profile?.role}</Badge>
-              <span className="text-sm text-muted-foreground">Account Type</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">Account Type</span>
             </div>
 
-            <Button onClick={handleProfileUpdate} disabled={loading}>
+            <Button onClick={handleProfileUpdate} disabled={loading} className="w-full sm:w-auto">
               <Save className="h-4 w-4 mr-2" />
               {loading ? "Saving..." : "Save Changes"}
             </Button>
@@ -142,16 +145,16 @@ function SettingsPage() {
         {/* Notification Settings */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <Bell className="h-5 w-5" />
               Notifications
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+              <div className="flex-1">
                 <Label>Push Notifications</Label>
-                <p className="text-sm text-muted-foreground">Receive notifications in the app</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Receive notifications in the app</p>
               </div>
               <Switch
                 checked={preferences.notifications}
@@ -159,10 +162,10 @@ function SettingsPage() {
               />
             </div>
             <Separator />
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+              <div className="flex-1">
                 <Label>Email Notifications</Label>
-                <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Receive notifications via email</p>
               </div>
               <Switch
                 checked={preferences.emailNotifications}
@@ -170,10 +173,10 @@ function SettingsPage() {
               />
             </div>
             <Separator />
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+              <div className="flex-1">
                 <Label>Task Reminders</Label>
-                <p className="text-sm text-muted-foreground">Get reminded about pending tasks</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Get reminded about pending tasks</p>
               </div>
               <Switch
                 checked={preferences.taskReminders}
@@ -186,16 +189,16 @@ function SettingsPage() {
         {/* Appearance Settings */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <Palette className="h-5 w-5" />
               Appearance
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+              <div className="flex-1">
                 <Label>Dark Mode</Label>
-                <p className="text-sm text-muted-foreground">Toggle dark theme</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Toggle dark theme</p>
               </div>
               <Switch
                 checked={preferences.darkMode}
@@ -208,13 +211,13 @@ function SettingsPage() {
         {/* Regional Settings */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <Globe className="h-5 w-5" />
               Regional Settings
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Language</Label>
                 <Select value={preferences.language} onValueChange={(value) => setPreferences({ ...preferences, language: value })}>
@@ -252,16 +255,16 @@ function SettingsPage() {
         {/* Work Preferences */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <Smartphone className="h-5 w-5" />
               Work Preferences
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+              <div className="flex-1">
                 <Label>Auto-Accept Tasks</Label>
-                <p className="text-sm text-muted-foreground">Automatically accept suitable tasks</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Automatically accept suitable tasks</p>
               </div>
               <Switch
                 checked={preferences.autoAcceptTasks}
@@ -269,10 +272,10 @@ function SettingsPage() {
               />
             </div>
             <Separator />
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+              <div className="flex-1">
                 <Label>Show Earnings Publicly</Label>
-                <p className="text-sm text-muted-foreground">Display earnings on your profile</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Display earnings on your profile</p>
               </div>
               <Switch
                 checked={preferences.showEarnings}
@@ -285,12 +288,12 @@ function SettingsPage() {
         {/* Security Settings */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <Shield className="h-5 w-5" />
               Security & Privacy
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             <Button variant="outline" className="w-full">
               Change Password
             </Button>
@@ -310,5 +313,3 @@ function SettingsPage() {
     </AppLayout>
   );
 }
-
-export default withAuth(SettingsPage);

@@ -75,13 +75,23 @@ export default function CreateTask() {
 
   useEffect(() => {
     if (!authLoading && !profile) {
+      console.log("No profile found, redirecting to auth");
       router.push("/auth");
       return;
     }
-    if (!authLoading && profile && profile.role !== "client") {
-      router.push("/tasks");
+    if (!authLoading && profile) {
+      console.log("Profile found:", profile.role);
+      if (profile.role !== "client") {
+        console.log("User is not a client, redirecting to tasks");
+        toast({
+          title: "Access Denied",
+          description: "Only clients can create tasks. Switch to a client account to access this feature.",
+          variant: "destructive",
+        });
+        router.push("/tasks");
+      }
     }
-  }, [authLoading, profile, router]);
+  }, [authLoading, profile, router, toast]);
 
   useEffect(() => {
     const fetchTaskTypes = async () => {
@@ -270,14 +280,14 @@ export default function CreateTask() {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-300">
+      <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in duration-300 px-4 sm:px-0">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-display font-bold">Create New Task</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl font-display font-bold">Create New Task</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Post a task for workers to complete
             </p>
           </div>
@@ -285,13 +295,13 @@ export default function CreateTask() {
 
         <Card className="border-border/50">
           <CardHeader>
-            <CardTitle>Task Details</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Task Details</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
               Provide clear instructions for the best results
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               {/* Task Type */}
               <div className="space-y-2">
                 <Label htmlFor="task_type">Task Type</Label>
@@ -504,7 +514,7 @@ export default function CreateTask() {
               </div>
 
               {/* Payout & Time */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="payout">Payout Amount ($)</Label>
                   <div className="relative">
@@ -566,18 +576,18 @@ export default function CreateTask() {
                 </p>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
-                  className="flex-1"
+                  className="flex-1 order-2 sm:order-1"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 gradient-primary text-primary-foreground font-semibold"
+                  className="flex-1 gradient-primary text-primary-foreground font-semibold order-1 sm:order-2"
                   disabled={loading || uploadingMedia}
                 >
                   {loading || uploadingMedia ? (
