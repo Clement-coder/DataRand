@@ -28,7 +28,16 @@ import {
   ComputeIcon,
   EducationIcon,
 } from "@/components/icons/DataRandIcons";
-import { LogOut, Settings, Menu, X, Plus } from "lucide-react";
+import { LogOut, Settings, Menu, X, Plus, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type NavItem = {
   label: string;
@@ -55,12 +64,20 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const navItems = profile?.role === "client" ? clientNavItems : workerNavItems;
 
   const handleSignOut = async () => {
+    setIsSigningOut(true);
     await signOut();
-    router.push("/auth");
+    // A short delay to show loading state and prevent UI flicker
+    setTimeout(() => {
+      setIsSigningOut(false);
+      setShowSignOutModal(false);
+      router.push("/auth");
+    }, 500);
   };
 
   const getInitials = (name: string | null, email: string | null) => {
@@ -166,9 +183,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     <span className="text-xs text-muted-foreground">
                       {profile?.email}
                     </span>
-                    <Badge variant="outline" className="w-fit text-xs capitalize mt-1 bg-primary/10 text-primary border-primary/30">
-                      {profile?.role}
-                    </Badge>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
@@ -186,8 +200,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={handleSignOut}
-                  className="text-destructive focus:text-destructive cursor-pointer"
+                  onClick={() => setShowSignOutModal(true)}
+                  className="text-destructive focus:text-destructive hover:bg-destructive/10 focus:bg-destructive/10 cursor-pointer"
                 >
                   <LogOut size={18} className="mr-3" />
                   Sign Out
@@ -247,6 +261,43 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <CornerAccent position="top-right" className="opacity-10" />
         {children}
       </main>
+
+      {/* Sign Out Modal */}
+      <Dialog open={showSignOutModal} onOpenChange={setShowSignOutModal}>
+        <DialogContent>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <DialogHeader>
+              <DialogTitle>Are you sure you want to sign out?</DialogTitle>
+              <DialogDescription>
+                You will be returned to the sign-in page.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowSignOutModal(false)}
+                disabled={isSigningOut}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+              >
+                {isSigningOut && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Sign Out
+              </Button>
+            </DialogFooter>
+          </motion.div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
