@@ -16,6 +16,7 @@ import withAuth from "@/components/withAuth";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 import { TaskSeeder } from "@/components/dev/TaskSeeder";
+import { SupabaseTestPanel } from "@/components/dev/SupabaseTestPanel";
 
 import {
   RefreshIcon,
@@ -24,6 +25,9 @@ import {
   TaskIcon,
 } from "@/components/icons/DataRandIcons";
 import { testSupabaseConnection, checkTasksTable } from "@/lib/supabase-test";
+import { setupSampleData } from "@/lib/setup-data";
+import { SupabaseDebugger, loadTasksWithDebug } from "@/lib/supabase-debug";
+
 
 function Tasks() {
   const { profile } = useAuth();
@@ -37,72 +41,111 @@ function Tasks() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchTasks = useCallback(async () => {
-    if (!profile) return;
+    if (!profile) {
+      SupabaseDebugger.warn("No profile found, skipping task fetch");
+      return;
+    }
     
+    SupabaseDebugger.log("Starting task fetch for profile:", profile.id);
     setLoading(true);
+    
     try {
+      // Run full diagnostic first
+      const diagnostic = await SupabaseDebugger.runFullDiagnostic();
+      
+      if (!diagnostic.environment) {
+        throw new Error("Environment variables not configured properly");
+      }
+      
+      if (!diagnostic.connection) {
+        throw new Error("Cannot connect to Supabase");
+      }
+
+      // Load task types with debugging
+      SupabaseDebugger.log("Loading task types...");
       const { data: types, error: typesError } = await supabase
         .from("task_types")
         .select("*");
         
-      if (!typesError) {
+      if (typesError) {
+        SupabaseDebugger.error("Failed to load task types:", typesError);
+      } else {
+        SupabaseDebugger.log("Task types loaded:", types?.length || 0);
         setTaskTypes(types as TaskType[] || []);
       }
 
-      let query = supabase
-        .from("tasks")
-        .select("*")
-        .eq("status", "available")
-        .order("created_at", { ascending: false });
-
-      if (selectedType) {
-        query = query.eq("task_type_id", selectedType);
+      // Load tasks with enhanced debugging
+      const taskResult = await loadTasksWithDebug();
+      
+      if (!taskResult.success) {
+        throw new Error(taskResult.error);
       }
 
-      const { data: tasksData, error: tasksError } = await query;
-
-      if (tasksError) {
-        toast({
-          title: "Failed to fetch tasks",
-          description: "Please check your Supabase configuration and try again.",
-          variant: "destructive",
-        });
-        setTasks([]);
-      } else {
-        setTasks((tasksData as Task[]) || []);
+      // Filter by selected type if needed
+      let filteredTasks = taskResult.data || [];
+      if (selectedType && taskResult.data) {
+        SupabaseDebugger.log("Filtering tasks by type:", selectedType);
+        filteredTasks = taskResult.data.filter(task => task.task_type_id === selectedType);
+        SupabaseDebugger.log("Filtered tasks count:", filteredTasks.length);
       }
+
+      setTasks(filteredTasks as Task[]);
+      SupabaseDebugger.log("Tasks successfully set in state:", filteredTasks.length);
+      
     } catch (err) {
+      SupabaseDebugger.error("Task fetch failed:", err);
+      
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      
       toast({
-        title: "Connection Error",
-        description: "Unable to connect to database. Check your environment variables.",
+        title: "Failed to load tasks",
+        description: `Error: ${errorMessage}. Check console for details.`,
         variant: "destructive",
       });
+      
       setTasks([]);
     } finally {
       setLoading(false);
+      SupabaseDebugger.log("Task fetch completed");
     }
   }, [profile, selectedType, toast]);
 
-  // Test connection on mount
+  // Enhanced connection test on mount
   useEffect(() => {
     const testConnection = async () => {
-      const connectionTest = await testSupabaseConnection();
-      if (!connectionTest.success) {
+      SupabaseDebugger.log("=== COMPONENT MOUNT DIAGNOSTICS ===");
+      
+      // Run comprehensive diagnostic
+      const diagnostic = await SupabaseDebugger.runFullDiagnostic();
+      
+      if (!diagnostic.environment) {
         toast({
-          title: "Connection Issue",
-          description: `Database connection failed: ${connectionTest.error}`,
+          title: "Configuration Error",
+          description: "Supabase environment variables are missing. Check your .env file.",
           variant: "destructive",
         });
+        return;
       }
       
-      const tasksTableTest = await checkTasksTable();
-      if (!tasksTableTest.success) {
+      if (!diagnostic.connection) {
         toast({
-          title: "Database Issue",
-          description: `Tasks table not accessible: ${tasksTableTest.error}`,
+          title: "Connection Issue", 
+          description: "Cannot connect to Supabase. Check your configuration.",
           variant: "destructive",
         });
+        return;
       }
+      
+      if (!diagnostic.tasksTable) {
+        toast({
+          title: "Database Issue",
+          description: "Tasks table is not accessible. Check your database setup.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      SupabaseDebugger.log("All diagnostics passed ✓");
     };
     
     testConnection();
@@ -152,10 +195,16 @@ useEffect(() => {
 
 
   const handleAcceptTask = async (taskId: string) => {
-    if (!profile) return;
+    if (!profile) {
+      SupabaseDebugger.warn("No profile found for task acceptance");
+      return;
+    }
+
+    SupabaseDebugger.log("Accepting task:", { taskId, workerId: profile.id });
 
     try {
       // Create assignment
+      SupabaseDebugger.log("Creating task assignment...");
       const { error: assignError } = await supabase
         .from("task_assignments")
         .insert({
@@ -165,6 +214,8 @@ useEffect(() => {
         });
 
       if (assignError) {
+        SupabaseDebugger.error("Assignment creation failed:", assignError);
+        
         if (assignError.code === "23505") {
           toast({
             title: "Already Accepted",
@@ -177,11 +228,21 @@ useEffect(() => {
         return;
       }
 
+      SupabaseDebugger.log("Assignment created successfully ✓");
+
       // Update task status
-      await supabase
+      SupabaseDebugger.log("Updating task status to assigned...");
+      const { error: updateError } = await supabase
         .from("tasks")
         .update({ status: "assigned" })
         .eq("id", taskId);
+
+      if (updateError) {
+        SupabaseDebugger.error("Task status update failed:", updateError);
+        throw updateError;
+      }
+
+      SupabaseDebugger.log("Task status updated successfully ✓");
 
       toast({
         title: "Challenge Accepted! 🦁",
@@ -190,10 +251,30 @@ useEffect(() => {
 
       router.push("/my-work");
     } catch (err) {
-      console.error("Error accepting task:", err);
+      SupabaseDebugger.error("Task acceptance failed:", err);
+      
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      
       toast({
         title: "Error",
-        description: "Failed to accept task. Please try again.",
+        description: `Failed to accept task: ${errorMessage}. Check console for details.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSetupData = async () => {
+    const result = await setupSampleData();
+    if (result.success) {
+      toast({
+        title: "Success",
+        description: "Sample data created successfully!",
+      });
+      fetchTasks();
+    } else {
+      toast({
+        title: "Setup Failed", 
+        description: result.error,
         variant: "destructive",
       });
     }
@@ -218,7 +299,12 @@ useEffect(() => {
     <AppLayout>
       <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
         {/* Development Tools */}
-        {process.env.NODE_ENV === 'development' && <TaskSeeder />}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="space-y-4">
+            <SupabaseTestPanel />
+            <TaskSeeder />
+          </div>
+        )}
 
         {/* Header */}
         <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -233,15 +319,26 @@ useEffect(() => {
               Accept tasks to prove your worth and earn rewards
             </p>
           </div>
-          <Button
-            variant="outline"
-            onClick={fetchTasks}
-            disabled={loading}
-            className="w-full sm:w-fit gap-2 h-9 sm:h-10"
-          >
-            <RefreshIcon size={16} className={`sm:w-[18px] sm:h-[18px] ${loading ? "animate-spin" : ""}`} />
-            <span className="text-sm sm:text-base">Refresh</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={fetchTasks}
+              disabled={loading}
+              className="w-full sm:w-fit gap-2 h-9 sm:h-10"
+            >
+              <RefreshIcon size={16} className={`sm:w-[18px] sm:h-[18px] ${loading ? "animate-spin" : ""}`} />
+              <span className="text-sm sm:text-base">Refresh</span>
+            </Button>
+            {process.env.NODE_ENV === 'development' && (
+              <Button
+                variant="secondary"
+                onClick={handleSetupData}
+                className="w-full sm:w-fit gap-2 h-9 sm:h-10"
+              >
+                Setup Data
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Debug Info (remove in production) */}

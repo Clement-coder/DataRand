@@ -33,7 +33,7 @@ export type Task = {
   description: string | null;
   instructions: string | null;
   payout_amount: number;
-  estimated_time_minutes: number;
+  estimated_time_minutes: number | null;
   status: "available" | "assigned" | "in_progress" | "submitted" | "approved" | "rejected" | "cancelled";
   priority: number;
   data: Record<string, unknown> | null;
