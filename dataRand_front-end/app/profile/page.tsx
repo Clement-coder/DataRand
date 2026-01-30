@@ -1,24 +1,16 @@
-"use client";
-
-import { AppLayout } from "@/components/layout/AppLayout";
-import withAuth from "@/components/withAuth";
-import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import { Badge } from "@/components/ui/badge";
-import { BarChart, DollarSign, CheckCircle, Star, Zap, Activity, Cpu, Gpu } from "lucide-react";
+import { BarChart, DollarSign, CheckCircle, Star, Zap, Activity, Cpu } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect } from "react";
 
 function ProfilePageContent() {
   const { profile } = useAuth();
   const [cpuUsage, setCpuUsage] = useState(0);
-  const [gpuUsage, setGpuUsage] = useState(0);
+  // const [gpuUsage, setGpuUsage] = useState(0); // Removed GPU usage state
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCpuUsage(Math.floor(Math.random() * 100));
-      setGpuUsage(Math.floor(Math.random() * 100));
+      // setGpuUsage(Math.floor(Math.random() * 100)); // Removed GPU usage update
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -137,16 +129,7 @@ function ProfilePageContent() {
               </div>
               <Progress value={cpuUsage} className="h-2" />
             </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Gpu className="h-5 w-5 text-muted-foreground" />
-                  <p className="text-sm font-medium">GPU Usage</p>
-                </div>
-                <p className="text-sm text-muted-foreground">{gpuUsage}%</p>
-              </div>
-              <Progress value={gpuUsage} className="h-2" />
-            </div>
+            {/* Removed GPU Usage */}
             <p className="text-xs text-muted-foreground">
               Real-time view of your device's contribution when compute sharing is active.
             </p>
