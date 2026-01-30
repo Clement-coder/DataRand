@@ -167,7 +167,7 @@ export function useComputeDevices() {
     try {
       if (!currentState.isActive) {
         // Start session
-        const { data: session, error } = await supabase
+        const { data: session, error: insertError } = await supabase
           .from("compute_sessions")
           .insert({
             worker_id: profile.id,
@@ -177,7 +177,10 @@ export function useComputeDevices() {
           .select()
           .single();
           
-        if (error) throw error;
+        if (insertError) {
+          console.error("Error starting compute session:", insertError);
+          throw new Error(`Failed to start session: ${insertError.message}`);
+        }
         
         const startTime = new Date();
         if (isPhone) {
@@ -199,10 +202,15 @@ export function useComputeDevices() {
           setState(prev => ({ ...prev, demandStatus: 'connected' }));
         }, Math.random() * 3000 + 2000);
         
-        await supabase
+        const { error: profileUpdateError } = await supabase
           .from("profiles")
           .update({ [isPhone ? 'phone_compute_enabled' : 'laptop_compute_enabled']: true })
           .eq("id", profile.id);
+
+        if (profileUpdateError) {
+          console.warn("Failed to update profile compute enabled status:", profileUpdateError);
+          // This is a non-critical error, session already started.
+        }
         
         toast({
           title: `${isPhone ? 'Phone' : 'Laptop'} Compute Started! 🚀`,
@@ -215,7 +223,7 @@ export function useComputeDevices() {
           const eduAmount = sessionEarnings * 0.15;
           const workerAmount = sessionEarnings * 0.85;
           
-          await supabase
+          const { error: updateSessionError } = await supabase
             .from("compute_sessions")
             .update({
               is_active: false,
@@ -224,8 +232,13 @@ export function useComputeDevices() {
             })
             .eq("id", currentState.sessionId);
 
+          if (updateSessionError) {
+            console.error("Error updating compute session:", updateSessionError);
+            throw new Error(`Failed to end session: ${updateSessionError.message}`);
+          }
+
           if (workerAmount > 0) {
-            await supabase.from("transactions").insert([
+            const { error: transactionError } = await supabase.from("transactions").insert([
               {
                 profile_id: profile.id,
                 amount: workerAmount,
@@ -241,13 +254,23 @@ export function useComputeDevices() {
                 description: `ComputeShare education contribution (15%)`
               }
             ]);
+
+            if (transactionError) {
+              console.error("Error inserting transactions:", transactionError);
+              throw new Error(`Failed to record earnings: ${transactionError.message}`);
+            }
           }
 
-          await supabase
+          const { error: profileUpdateError } = await supabase
             .from("profiles")
             .update({ [isPhone ? 'phone_compute_enabled' : 'laptop_compute_enabled']: false })
             .eq("id", profile.id);
           
+          if (profileUpdateError) {
+            console.warn("Failed to update profile compute enabled status:", profileUpdateError);
+            // This is a non-critical error, session already ended.
+          }
+
           toast({
             title: `${isPhone ? 'Phone' : 'Laptop'} Compute Stopped`,
             description: `You earned $${sessionEarnings.toFixed(4)} this session.`
@@ -270,9 +293,15 @@ export function useComputeDevices() {
       }
     } catch (error) {
       console.error("Error toggling compute:", error);
+      let errorMessage = "Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null && 'message' in error) {
+        errorMessage = (error as { message: string }).message;
+      }
       toast({
-        title: "Error",
-        description: "Failed to toggle compute sharing. Please try again.",
+        title: "Failed to toggle compute share",
+        description: `Error: ${errorMessage}`,
         variant: "destructive"
       });
     } finally {
