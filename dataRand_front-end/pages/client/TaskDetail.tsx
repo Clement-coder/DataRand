@@ -15,7 +15,7 @@ interface TaskDetailProps {
   taskId: string;
 }
 
-export function TaskDetail({ taskId }: TaskDetailProps) {
+export default function TaskDetail({ taskId }: TaskDetailProps) {
   const { profile } = useAuth();
   const { getTaskById } = useLocalTasks();
   const router = useRouter();
