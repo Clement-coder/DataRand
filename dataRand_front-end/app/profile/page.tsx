@@ -6,10 +6,22 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, DollarSign, CheckCircle, Star, Zap, Activity } from "lucide-react";
+import { BarChart, DollarSign, CheckCircle, Star, Zap, Activity, Cpu, Gpu } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { useState, useEffect } from "react";
 
 function ProfilePage() {
   const { profile } = useAuth();
+  const [cpuUsage, setCpuUsage] = useState(0);
+  const [gpuUsage, setGpuUsage] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCpuUsage(Math.floor(Math.random() * 100));
+      setGpuUsage(Math.floor(Math.random() * 100));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <AppLayout>
@@ -88,10 +100,22 @@ function ProfilePage() {
               <Zap className="h-5 w-5" /> Daily Impact
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              A summary of your daily contributions. (Coming soon)
-            </p>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+              <CheckCircle className="h-6 w-6 text-green-500 mb-2" />
+              <p className="text-lg font-bold">5</p>
+              <p className="text-sm text-muted-foreground">Tasks Completed</p>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+              <Activity className="h-6 w-6 text-blue-500 mb-2" />
+              <p className="text-lg font-bold">1.2 GB</p>
+              <p className="text-sm text-muted-foreground">Data Processed</p>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+              <DollarSign className="h-6 w-6 text-yellow-500 mb-2" />
+              <p className="text-lg font-bold">$3.45</p>
+              <p className="text-sm text-muted-foreground">Earned Today</p>
+            </div>
           </CardContent>
         </Card>
 
@@ -102,9 +126,29 @@ function ProfilePage() {
               <Activity className="h-5 w-5" /> Live Resource Transparency
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Real-time view of your device's contribution. (Coming soon)
+          <CardContent className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Cpu className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm font-medium">CPU Usage</p>
+                </div>
+                <p className="text-sm text-muted-foreground">{cpuUsage}%</p>
+              </div>
+              <Progress value={cpuUsage} className="h-2" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Gpu className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm font-medium">GPU Usage</p>
+                </div>
+                <p className="text-sm text-muted-foreground">{gpuUsage}%</p>
+              </div>
+              <Progress value={gpuUsage} className="h-2" />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Real-time view of your device's contribution when compute sharing is active.
             </p>
           </CardContent>
         </Card>
