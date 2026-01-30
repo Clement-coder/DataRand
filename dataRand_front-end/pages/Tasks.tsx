@@ -25,7 +25,6 @@ import {
   SearchIcon,
   TaskIcon,
 } from "@/components/icons/DataRandIcons";
-import { testSupabaseConnection, checkTasksTable } from "@/lib/supabase-test";
 import { setupSampleData } from "@/lib/setup-data";
 import { SupabaseDebugger, loadTasksWithDebug } from "@/lib/supabase-debug";
 
@@ -86,17 +85,26 @@ function Tasks() {
       }
 
       // Filter by selected type if needed
-      let filteredTasks = taskResult.data || [];
+      let filteredTasks: Task[] = (taskResult.data || []) as Task[];
       
       // Add local tasks to the mix
-      const localTasksFormatted = localTasks.map(localTask => ({
+      const localTasksFormatted: Task[] = localTasks.map(localTask => ({
         ...localTask,
         // Convert local task format to match expected Task format
-        task_type: { name: 'Local Task' }, // You might want to map this properly
+        status: localTask.status as Task['status'],
+        data: null as Task['data'],
+        expires_at: null,
+        priority: 1,
+        task_type: { 
+          id: localTask.task_type_id,
+          name: 'Local Task',
+          description: 'Local task type',
+          icon: null
+        },
       }));
       
       // Combine server tasks with local tasks
-      const allTasks = [...filteredTasks, ...localTasksFormatted];
+      const allTasks: Task[] = [...filteredTasks, ...localTasksFormatted];
       
       if (selectedType && allTasks) {
         SupabaseDebugger.log("Filtering tasks by type:", selectedType);
@@ -106,7 +114,7 @@ function Tasks() {
         filteredTasks = allTasks;
       }
 
-      setTasks(filteredTasks as Task[]);
+      setTasks(filteredTasks);
       SupabaseDebugger.log("Tasks successfully set in state:", filteredTasks.length);
       
     } catch (err) {
@@ -125,7 +133,7 @@ function Tasks() {
       setLoading(false);
       SupabaseDebugger.log("Task fetch completed");
     }
-  }, [profile, selectedType, toast]);
+  }, [profile, selectedType, toast, localTasks]);
 
   // Enhanced connection test on mount
   useEffect(() => {
@@ -380,7 +388,7 @@ useEffect(() => {
               <p>Tasks loaded: {tasks.length}</p>
               <p>Task types loaded: {taskTypes.length}</p>
               <p>Selected type: {selectedType || 'All'}</p>
-              <p>Search query: "{searchQuery}"</p>
+              <p>Search query: &quot;{searchQuery}&quot;</p>
               <p>Filtered tasks: {filteredTasks.length}</p>
             </div>
           </div>
