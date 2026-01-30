@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./useAuth";
-import { supabase } from "@/lib/supabase";
+// import { supabase } from "@/lib/supabase"; // Commented out Supabase import
 import { useToast } from "./use-toast";
 
 export interface DeviceState {
@@ -19,7 +19,7 @@ export function useComputeDevices() {
   
   const [phoneState, setPhoneState] = useState<DeviceState>({
     isActive: false,
-    isInstalled: false,
+    isInstalled: true, // Hardcoded to true
     sessionId: null,
     sessionMinutes: 0,
     demandStatus: 'none'
@@ -27,7 +27,7 @@ export function useComputeDevices() {
   
   const [laptopState, setLaptopState] = useState<DeviceState>({
     isActive: false,
-    isInstalled: false,
+    isInstalled: true, // Hardcoded to true
     sessionId: null,
     sessionMinutes: 0,
     demandStatus: 'none'
@@ -41,77 +41,58 @@ export function useComputeDevices() {
   const phoneStartRef = useRef<Date | null>(null);
   const laptopStartRef = useRef<Date | null>(null);
 
-  // Initialize device states
+  // Initialize device states (hardcoded simulation)
   useEffect(() => {
     if (!profile) return;
     
     const initializeDevices = async () => {
       setLoading(true);
       try {
-        // Fetch user profile with device info
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("phone_app_installed, laptop_software_installed, phone_compute_enabled, laptop_compute_enabled")
-          .eq("id", profile.id)
-          .maybeSingle();
-          
-        if (profileData) {
-          // Auto-detect desktop and mark as installed
-          const isDesktop = !/Mobi|Android/i.test(navigator.userAgent);
-          const laptopInstalled = profileData.laptop_software_installed || isDesktop;
-          
+        // Simulate fetching profile data
+        // const { data: profileData } = await supabase... // Commented out Supabase call
+        
+        // Hardcode installed status
+        setPhoneState(prev => ({
+          ...prev,
+          isInstalled: true,
+          isActive: localStorage.getItem('phoneComputeActive') === 'true' // Load from local storage
+        }));
+        
+        setLaptopState(prev => ({
+          ...prev,
+          isInstalled: true,
+          isActive: localStorage.getItem('laptopComputeActive') === 'true' // Load from local storage
+        }));
+
+        // Simulate active sessions
+        if (localStorage.getItem('phoneComputeActive') === 'true') {
+          const startTime = new Date(localStorage.getItem('phoneComputeStartTime') || Date.now());
+          const minutes = Math.floor((Date.now() - startTime.getTime()) / 60000);
           setPhoneState(prev => ({
             ...prev,
-            isInstalled: profileData.phone_app_installed || false
+            isActive: true,
+            sessionId: 'simulated-phone-session',
+            sessionMinutes: minutes,
+            demandStatus: Math.random() > 0.5 ? 'connected' : 'waiting' // Simulate demand
           }));
-          
-          setLaptopState(prev => ({
-            ...prev,
-            isInstalled: laptopInstalled
-          }));
-          
-          // Update DB if desktop detected
-          if (isDesktop && !profileData.laptop_software_installed) {
-            await supabase
-              .from("profiles")
-              .update({ laptop_software_installed: true })
-              .eq("id", profile.id);
-          }
+          phoneStartRef.current = startTime;
         }
 
-        // Check for active sessions
-        const { data: sessions } = await supabase
-          .from("compute_sessions")
-          .select("*")
-          .eq("worker_id", profile.id)
-          .eq("is_active", true);
-          
-        sessions?.forEach(session => {
-          const startTime = new Date(session.started_at);
+        if (localStorage.getItem('laptopComputeActive') === 'true') {
+          const startTime = new Date(localStorage.getItem('laptopComputeStartTime') || Date.now());
           const minutes = Math.floor((Date.now() - startTime.getTime()) / 60000);
-          
-          if (session.device_type === 'mobile') {
-            setPhoneState(prev => ({
-              ...prev,
-              isActive: true,
-              sessionId: session.id,
-              sessionMinutes: minutes,
-              demandStatus: Math.random() > 0.5 ? 'connected' : 'waiting' // Simulate demand
-            }));
-            phoneStartRef.current = startTime;
-          } else {
-            setLaptopState(prev => ({
-              ...prev,
-              isActive: true,
-              sessionId: session.id,
-              sessionMinutes: minutes,
-              demandStatus: Math.random() > 0.5 ? 'connected' : 'waiting' // Simulate demand
-            }));
-            laptopStartRef.current = startTime;
-          }
-        });
+          setLaptopState(prev => ({
+            ...prev,
+            isActive: true,
+            sessionId: 'simulated-laptop-session',
+            sessionMinutes: minutes,
+            demandStatus: Math.random() > 0.5 ? 'connected' : 'waiting' // Simulate demand
+          }));
+          laptopStartRef.current = startTime;
+        }
+
       } catch (error) {
-        console.error("Error initializing devices:", error);
+        console.error("Error initializing devices (simulated):", error);
       } finally {
         setLoading(false);
       }
@@ -160,29 +141,17 @@ export function useComputeDevices() {
     const isPhone = device === 'phone';
     const currentState = isPhone ? phoneState : laptopState;
     const setState = isPhone ? setPhoneState : setLaptopState;
-    const deviceType = isPhone ? 'mobile' : 'desktop';
+    // const deviceType = isPhone ? 'mobile' : 'desktop'; // Not needed for hardcoded
     
     setToggling(device);
     
     try {
       if (!currentState.isActive) {
-        // Start session
-        const { data: session, error: insertError } = await supabase
-          .from("compute_sessions")
-          .insert({
-            worker_id: profile.id,
-            device_type: deviceType,
-            is_active: true
-          })
-          .select()
-          .single();
-          
-        if (insertError) {
-          console.error("Error starting compute session:", insertError);
-          throw new Error(`Failed to start session: ${insertError.message}`);
-        }
-        
+        // Simulate Start session
         const startTime = new Date();
+        localStorage.setItem(`${device}ComputeActive`, 'true');
+        localStorage.setItem(`${device}ComputeStartTime`, startTime.toISOString());
+
         if (isPhone) {
           phoneStartRef.current = startTime;
         } else {
@@ -192,7 +161,7 @@ export function useComputeDevices() {
         setState(prev => ({
           ...prev,
           isActive: true,
-          sessionId: session.id,
+          sessionId: `simulated-${device}-session`,
           sessionMinutes: 0,
           demandStatus: 'waiting'
         }));
@@ -202,80 +171,23 @@ export function useComputeDevices() {
           setState(prev => ({ ...prev, demandStatus: 'connected' }));
         }, Math.random() * 3000 + 2000);
         
-        const { error: profileUpdateError } = await supabase
-          .from("profiles")
-          .update({ [isPhone ? 'phone_compute_enabled' : 'laptop_compute_enabled']: true })
-          .eq("id", profile.id);
-
-        if (profileUpdateError) {
-          console.warn("Failed to update profile compute enabled status:", profileUpdateError);
-          // This is a non-critical error, session already started.
-        }
-        
         toast({
           title: `${isPhone ? 'Phone' : 'Laptop'} Compute Started! 🚀`,
           description: "You're now earning from your idle resources. 15% goes to education."
         });
       } else {
-        // End session
-        if (currentState.sessionId) {
-          const sessionEarnings = currentState.sessionMinutes * 0.001;
-          const eduAmount = sessionEarnings * 0.15;
-          const workerAmount = sessionEarnings * 0.85;
-          
-          const { error: updateSessionError } = await supabase
-            .from("compute_sessions")
-            .update({
-              is_active: false,
-              ended_at: new Date().toISOString(),
-              total_earned: sessionEarnings
-            })
-            .eq("id", currentState.sessionId);
+        // Simulate End session
+        localStorage.setItem(`${device}ComputeActive`, 'false');
+        localStorage.removeItem(`${device}ComputeStartTime`);
 
-          if (updateSessionError) {
-            console.error("Error updating compute session:", updateSessionError);
-            throw new Error(`Failed to end session: ${updateSessionError.message}`);
-          }
-
-          if (workerAmount > 0) {
-            const { error: transactionError } = await supabase.from("transactions").insert([
-              {
-                profile_id: profile.id,
-                amount: workerAmount,
-                type: "earning",
-                status: "completed",
-                description: `ComputeShare ${isPhone ? 'phone' : 'laptop'} earnings (${currentState.sessionMinutes} min)`
-              },
-              {
-                profile_id: profile.id,
-                amount: eduAmount,
-                type: "education_fund",
-                status: "completed",
-                description: `ComputeShare education contribution (15%)`
-              }
-            ]);
-
-            if (transactionError) {
-              console.error("Error inserting transactions:", transactionError);
-              throw new Error(`Failed to record earnings: ${transactionError.message}`);
-            }
-          }
-
-          const { error: profileUpdateError } = await supabase
-            .from("profiles")
-            .update({ [isPhone ? 'phone_compute_enabled' : 'laptop_compute_enabled']: false })
-            .eq("id", profile.id);
-          
-          if (profileUpdateError) {
-            console.warn("Failed to update profile compute enabled status:", profileUpdateError);
-            // This is a non-critical error, session already ended.
-          }
-
-          toast({
-            title: `${isPhone ? 'Phone' : 'Laptop'} Compute Stopped`,
-            description: `You earned $${sessionEarnings.toFixed(4)} this session.`
-          });
-        }
+        const sessionEarnings = currentState.sessionMinutes * 0.001;
+        // const eduAmount = sessionEarnings * 0.15; // Not needed for hardcoded
+        // const workerAmount = sessionEarnings * 0.85; // Not needed for hardcoded
+        
+        toast({
+          title: `${isPhone ? 'Phone' : 'Laptop'} Compute Stopped`,
+          description: `You earned $${sessionEarnings.toFixed(4)} this session.`
+        });
         
         setState(prev => ({
           ...prev,
@@ -292,16 +204,10 @@ export function useComputeDevices() {
         }
       }
     } catch (error) {
-      console.error("Error toggling compute:", error);
-      let errorMessage = "Please try again.";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null && 'message' in error) {
-        errorMessage = (error as { message: string }).message;
-      }
+      console.error("Error toggling compute (simulated):", error);
       toast({
-        title: "Failed to toggle compute share",
-        description: `Error: ${errorMessage}`,
+        title: "Simulated Error",
+        description: "Failed to toggle compute sharing (simulated).",
         variant: "destructive"
       });
     } finally {
