@@ -133,38 +133,48 @@ export default function CreateTask() {
     }
   };
 
-  // Hardcoded media upload to local storage
-  const uploadMediaToLocalStorage = async (file: File): Promise<{ url: string; type: string } | null> => {
+  const uploadMediaToSupabase = async (file: File): Promise<{ url: string; type: string } | null> => {
+    if (!profile) {
+      toast({ title: "Authentication Error", description: "You must be logged in to upload media.", variant: "destructive" });
+      return null;
+    }
+  
     setUploadingMedia(true);
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-        // Store in local storage with a unique key, e.g., based on timestamp
-        const mediaKey = `task-media-${Date.now()}`;
-        localStorage.setItem(mediaKey, base64String);
-        localStorage.setItem(`${mediaKey}-type`, mediaType);
-        
-        toast({
-          title: "Media Uploaded",
-          description: "Media saved to local storage.",
-        });
-        setUploadingMedia(false);
-        resolve({ url: mediaKey, type: mediaType }); // Return key as URL for now
-      };
-      reader.onerror = (error) => {
-        console.error("Local storage upload error:", error);
-        toast({
-          title: "Upload failed", 
-          description: "Failed to save media to local storage.",
-          variant: "destructive",
-        });
-        setUploadingMedia(false);
-        resolve(null);
-      };
-      reader.readAsDataURL(file);
-    });
+  
+    try {
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `${profile.id}/${Date.now()}.${fileExtension}`;
+      const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+  
+      const { data, error } = await supabase.storage
+        .from('task_media')
+        .upload(fileName, file);
+  
+      if (error) {
+        throw error;
+      }
+  
+      const { data: publicUrlData } = supabase.storage
+        .from('task_media')
+        .getPublicUrl(data.path);
+  
+      toast({
+        title: "Media Uploaded Successfully",
+        description: "Your file has been stored in Supabase.",
+      });
+  
+      return { url: publicUrlData.publicUrl, type: mediaType };
+    } catch (error: any) {
+      console.error("Supabase upload error:", error);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload media to Supabase.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploadingMedia(false);
+    }
   };
 
   const getTargetCountries = (): string[] => {
@@ -184,16 +194,16 @@ export default function CreateTask() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!profile) return;
-
+  
     const parsed = taskSchema.safeParse({
       ...formData,
       payout_amount: parseFloat(formData.payout_amount),
       estimated_time_minutes: parseInt(formData.estimated_time_minutes),
       worker_count: parseInt(formData.worker_count),
     });
-
+  
     if (!parsed.success) {
       toast({
         title: "Validation Error",
@@ -202,23 +212,20 @@ export default function CreateTask() {
       });
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
-      // Upload media if present (to local storage)
       let mediaData: { url: string; type: string } | null = null;
       if (mediaFile) {
-        mediaData = await uploadMediaToLocalStorage(mediaFile);
+        mediaData = await uploadMediaToSupabase(mediaFile);
         if (!mediaData) {
           setLoading(false);
-          return; // Upload failed, error already shown
+          return; // Stop if media upload fails
         }
       }
-
-      // Simulate task creation and store in local storage
+  
       const newTask = {
-        id: `local-task-${Date.now()}`, // Unique ID for local storage
         client_id: profile.id,
         title: formData.title,
         description: formData.description,
@@ -228,29 +235,28 @@ export default function CreateTask() {
         task_type_id: formData.task_type_id,
         worker_count: parseInt(formData.worker_count),
         target_countries: getTargetCountries(),
-        media_url: mediaData?.url || null, // This will be the local storage key
+        media_url: mediaData?.url || null,
         media_type: mediaData?.type || null,
         status: "available",
-        created_at: new Date().toISOString(),
       };
-
-      const existingTasks = JSON.parse(localStorage.getItem('localTasks') || '[]');
-      localStorage.setItem('localTasks', JSON.stringify([...existingTasks, newTask]));
-
-      // Trigger storage event to refresh other components
-      window.dispatchEvent(new Event('storage'));
-
+  
+      const { error } = await supabase.from("tasks").insert([newTask]);
+  
+      if (error) {
+        throw error;
+      }
+  
       toast({
-        title: "Task created successfully",
+        title: "Task Created Successfully",
         description: "Your task has been posted and is now available to workers.",
       });
-
-      router.push("/client/tasks"); // Redirect as before
-    } catch (err) {
-      console.error("Error creating task (simulated):", err);
+  
+      router.push("/client/tasks");
+    } catch (err: any) {
+      console.error("Error creating task:", err);
       toast({
         title: "Error",
-        description: "Failed to create task (simulated). Please check console.",
+        description: err.message || "Failed to create task. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -468,13 +474,11 @@ export default function CreateTask() {
                     <SelectValue placeholder="Select target region" />
                   </SelectTrigger>
                   <SelectContent>
-                    {taskTypes.map((type) => { // This should be TARGET_REGIONS, not taskTypes
-                      return (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.description}
-                        </SelectItem>
-                      );
-                    })}
+                    {TARGET_REGIONS.map((region) => (
+                      <SelectItem key={region.value} value={region.value}>
+                        {region.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 

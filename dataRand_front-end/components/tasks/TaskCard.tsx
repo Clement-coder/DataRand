@@ -37,7 +37,13 @@ export function TaskCard({ task, onAccept, showAccept = true }: TaskCardProps) {
   const colorClass = taskTypeColors[taskTypeName] || "bg-muted text-muted-foreground";
 
   return (
-    <Card className="group relative overflow-hidden border border-border/50 bg-card hover:border-primary/20 hover:shadow-lg transition-all duration-200 h-full flex flex-col">
+    <Card className="group relative overflow-hidden border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-300 h-full flex flex-col">
+      {/* Subtle African-inspired geometric accent */}
+      <div className="absolute top-0 right-0 w-16 h-16 opacity-0 group-hover:opacity-10 transition-opacity duration-300">
+        <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-primary transform rotate-45" />
+        <div className="absolute top-4 right-4 w-2 h-2 bg-primary rounded-full" />
+      </div>
+
       {/* Priority indicator */}
       {task.priority > 1 && (
         <div className="absolute top-3 right-3 flex gap-0.5">
@@ -49,7 +55,7 @@ export function TaskCard({ task, onAccept, showAccept = true }: TaskCardProps) {
 
       <CardHeader className="pb-3 p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
-          <Badge variant="outline" className={`${colorClass} font-medium gap-1.5 text-xs`}>
+          <Badge variant="outline" className={`${colorClass} font-medium gap-1.5 text-xs group-hover:border-primary/20 transition-colors`}>
             <Icon size={12} />
             <span className="hidden sm:inline">{task.task_type?.description || taskTypeName.replace("_", " ")}</span>
             <span className="sm:hidden">{(task.task_type?.description || taskTypeName.replace("_", " ")).split(" ")[0]}</span>
@@ -61,7 +67,7 @@ export function TaskCard({ task, onAccept, showAccept = true }: TaskCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-3 p-4 sm:p-6 pt-0 flex-1">
-        <h3 className="font-semibold text-base sm:text-lg leading-tight line-clamp-2">
+        <h3 className="font-semibold text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-primary/90 transition-colors duration-300">
           {task.title}
         </h3>
 
@@ -73,7 +79,7 @@ export function TaskCard({ task, onAccept, showAccept = true }: TaskCardProps) {
 
         <div className="flex items-center gap-4 pt-2">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors duration-300">
               <EarningsIcon size={14} className="text-primary" />
             </div>
             <span className="font-bold text-lg text-primary">
@@ -92,11 +98,11 @@ export function TaskCard({ task, onAccept, showAccept = true }: TaskCardProps) {
         <CardFooter className="pt-0 p-4 sm:p-6">
           <Button
             onClick={onAccept}
-            className="w-full h-10 gradient-primary text-primary-foreground font-semibold group/btn"
+            className="w-full h-10 gradient-primary text-primary-foreground font-semibold group/btn hover:shadow-sm transition-all duration-300"
           >
             <span className="hidden sm:inline">Accept Challenge</span>
             <span className="sm:hidden">Accept</span>
-            <ArrowRightIcon size={16} className="ml-2 group-hover/btn:translate-x-0.5 transition-transform" />
+            <ArrowRightIcon size={16} className="ml-2 group-hover/btn:translate-x-1 transition-transform duration-300" />
           </Button>
         </CardFooter>
       )}
