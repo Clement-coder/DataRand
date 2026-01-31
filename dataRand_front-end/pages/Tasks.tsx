@@ -88,20 +88,25 @@ function Tasks() {
       let filteredTasks: Task[] = (taskResult.data || []) as Task[];
       
       // Add local tasks to the mix
-      const localTasksFormatted: Task[] = localTasks.map(localTask => ({
-        ...localTask,
-        // Convert local task format to match expected Task format
-        status: localTask.status as Task['status'],
-        data: null as Task['data'],
-        expires_at: null,
-        priority: 1,
-        task_type: { 
-          id: localTask.task_type_id,
-          name: 'Local Task',
-          description: 'Local task type',
-          icon: null
-        },
-      }));
+      const localTasksFormatted: Task[] = localTasks.map(localTask => {
+        // Find the matching task type from loaded types
+        const matchingType = taskTypes.find(type => type.id === localTask.task_type_id);
+        
+        return {
+          ...localTask,
+          // Convert local task format to match expected Task format
+          status: localTask.status as Task['status'],
+          data: null as Task['data'],
+          expires_at: null,
+          priority: 1,
+          task_type: matchingType || { 
+            id: localTask.task_type_id,
+            name: 'unknown',
+            description: 'Unknown task type',
+            icon: null
+          },
+        };
+      });
       
       // Combine server tasks with local tasks
       const allTasks: Task[] = [...filteredTasks, ...localTasksFormatted];
