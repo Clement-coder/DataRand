@@ -52,12 +52,13 @@ const isHexAddress = (value: string) => /^0x[a-fA-F0-9]{40}$/.test(value.trim())
 
 const parseEtherAmount = (value: string) => {
   const trimmed = value.trim();
-  if (!trimmed) return 0n;
+  if (!trimmed) return BigInt(0);
   const [whole, fraction = ""] = trimmed.split(".");
   const safeWhole = whole.replace(/^0+/, "") || "0";
   const safeFraction = fraction.replace(/[^0-9]/g, "").slice(0, 18).padEnd(18, "0");
-  if (!/^\d+$/.test(safeWhole)) return 0n;
-  const wholeWei = BigInt(safeWhole) * 10n ** 18n;
+  if (!/^\d+$/.test(safeWhole)) return BigInt(0);
+  const base = BigInt(10) ** BigInt(18);
+  const wholeWei = BigInt(safeWhole) * base;
   const fractionWei = BigInt(safeFraction || "0");
   return wholeWei + fractionWei;
 };

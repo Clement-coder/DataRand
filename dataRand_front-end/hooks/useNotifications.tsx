@@ -44,12 +44,15 @@ export function useNotifications() {
     try {
       const { count, error } = await supabase
         .from("notifications")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact" })
         .eq("user_id", profile.id)
         .eq("read", false);
 
       if (error) {
-        console.error("Error fetching notification count:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error fetching notification count:", error);
+        }
+        setUnreadCount(0);
       } else {
         setUnreadCount(count || 0);
       }
