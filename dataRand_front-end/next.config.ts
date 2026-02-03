@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import fs from "fs";
 import path from "path";
 import type { NextConfig } from "next";
@@ -21,6 +22,10 @@ for (const fileName of envFiles) {
   }
 }
 
+=======
+import type { NextConfig } from "next";
+
+>>>>>>> a2959995b359c4a1000319fd5ee9d9edd2d4bd56
 const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"]
