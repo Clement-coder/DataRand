@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -28,9 +37,30 @@ import {
   Wallet,
   GraduationCap,
   AlertCircle,
+  Copy,
+  Send,
+  RefreshCw,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { WithdrawalDialog } from "@/components/earnings/WithdrawalDialog";
+import { useToast } from "@/hooks/use-toast";
+import { useWalletBalance } from "@/hooks/useWalletBalance";
+import { useChainId, useChains, useSendTransaction, useSwitchChain, useWaitForTransactionReceipt } from "wagmi";
+import QRCode from "react-qr-code";
+
+const isHexAddress = (value: string) => /^0x[a-fA-F0-9]{40}$/.test(value.trim());
+
+const parseEtherAmount = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return 0n;
+  const [whole, fraction = ""] = trimmed.split(".");
+  const safeWhole = whole.replace(/^0+/, "") || "0";
+  const safeFraction = fraction.replace(/[^0-9]/g, "").slice(0, 18).padEnd(18, "0");
+  if (!/^\d+$/.test(safeWhole)) return 0n;
+  const wholeWei = BigInt(safeWhole) * 10n ** 18n;
+  const fractionWei = BigInt(safeFraction || "0");
+  return wholeWei + fractionWei;
+};
 
 interface WithdrawalRequest {
   id: string;
@@ -56,6 +86,26 @@ function Earnings() {
     educationFund: 0,
     pendingWithdrawals: 0,
   });
+  const { toast } = useToast();
+  const chainId = useChainId();
+  const chains = useChains();
+  const { balance, symbol, isLoading: walletLoading, address, refetch: refetchWallet } = useWalletBalance(chainId);
+  const [withdrawAddress, setWithdrawAddress] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const { mutateAsync: sendTransactionAsync, data: txHash, isPending: isSending } = useSendTransaction();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
+  const availableWalletBalance = useMemo(() => {
+    const parsed = Number(balance);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, [balance]);
+  const currentChain = useMemo(
+    () => chains?.find((chain) => chain.id === chainId) || null,
+    [chains, chainId]
+  );
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -133,6 +183,19 @@ function Earnings() {
     fetchData();
   }, [profile]);
 
+  useEffect(() => {
+    if (isConfirmed && txHash) {
+      toast({
+        title: "Withdrawal sent",
+        description: "Your transfer is confirmed.",
+      });
+      refetchWallet();
+      setWithdrawAmount("");
+      setWithdrawAddress("");
+    }
+  }, [isConfirmed, txHash, refetchWallet, toast]);
+
+
   if (authLoading) {
     return null;
   }
@@ -162,6 +225,78 @@ function Earnings() {
     chipper: "Chipper Cash",
     bank: "Bank Transfer",
   };
+
+  const handleCopyAddress = async () => {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      toast({
+        title: "Address copied",
+        description: "Wallet address copied to clipboard.",
+      });
+    } catch (err) {
+      console.error("Copy failed:", err);
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy address. Please copy manually.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendWithdrawal = async () => {
+    setWithdrawError(null);
+
+    if (!address) {
+      setWithdrawError("No wallet found. Please connect and try again.");
+      return;
+    }
+
+    if (!chainId) {
+      setWithdrawError("Select a network to continue.");
+      return;
+    }
+
+    if (!isHexAddress(withdrawAddress)) {
+      setWithdrawError("Enter a valid recipient address.");
+      return;
+    }
+
+    const amountValue = Number(withdrawAmount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setWithdrawError("Enter a valid amount to withdraw.");
+      return;
+    }
+
+    if (amountValue > availableWalletBalance) {
+      setWithdrawError("Amount exceeds your wallet balance.");
+      return;
+    }
+
+    try {
+      await sendTransactionAsync({
+        to: withdrawAddress as `0x${string}`,
+        value: parseEtherAmount(withdrawAmount),
+        chainId,
+      });
+      toast({
+        title: "Transaction submitted",
+        description: "Confirm the transfer in your wallet.",
+      });
+    } catch (err) {
+      console.error("Send error:", err);
+      toast({
+        title: "Transaction failed",
+        description: "Unable to send the transaction. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const shortAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : "Not connected";
+  const chainLabel = currentChain?.name || "Select Network";
 
   return (
     <AppLayout>
@@ -271,6 +406,143 @@ function Earnings() {
               <Wallet className="h-4 w-4 mr-2" />
               Withdraw ${stats.available.toFixed(2)}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Wallet */}
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              Wallet
+            </CardTitle>
+            <CardDescription>
+              Receive funds with your wallet address, or send funds to another address.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!address ? (
+              <div className="rounded-lg border border-dashed border-border/70 p-6 text-center text-sm text-muted-foreground">
+                No wallet detected yet. Connect a wallet to continue.
+              </div>
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="rounded-lg border border-border/60 p-4 space-y-3 bg-muted/20">
+                  <div className="space-y-2">
+                    <Label>Network</Label>
+                    <Select
+                      value={chainId ? String(chainId) : ""}
+                      onValueChange={(value) => switchChain({ chainId: Number(value) })}
+                    >
+                      <SelectTrigger disabled={!chains?.length || isSwitching}>
+                        <SelectValue placeholder="Select network" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(chains || []).map((chain) => (
+                          <SelectItem key={chain.id} value={String(chain.id)}>
+                            {chain.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Address</span>
+                    <Badge variant="outline">{chainLabel}</Badge>
+                  </div>
+                  <div className="text-sm font-mono break-all">{address}</div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={handleCopyAddress}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => refetchWallet()}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh
+                    </Button>
+                  </div>
+                  <div className="pt-2 border-t border-border/60">
+                    <p className="text-xs text-muted-foreground">Wallet Balance</p>
+                    <p className="text-2xl font-display font-bold">
+                      {walletLoading ? "Loading..." : `${balance} ${symbol}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-lg border border-border/60 p-4 space-y-3">
+                    <div>
+                      <p className="text-sm font-semibold">Receive</p>
+                      <p className="text-xs text-muted-foreground">
+                        Share your wallet address to receive funds.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-center rounded-lg border border-dashed border-border/70 bg-muted/30 p-4">
+                      <div className="rounded-md bg-white p-2">
+                        <QRCode value={address} size={160} />
+                      </div>
+                    </div>
+                    <div className="rounded-md bg-muted/40 p-3 text-xs font-mono break-all">
+                      {shortAddress}
+                    </div>
+                    <Button variant="secondary" size="sm" onClick={handleCopyAddress}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Address
+                    </Button>
+                  </div>
+
+                  <div className="rounded-lg border border-border/60 p-4 space-y-3">
+                    <div>
+                      <p className="text-sm font-semibold">Withdraw</p>
+                      <p className="text-xs text-muted-foreground">
+                        Send funds to another wallet.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="withdrawAddress">Recipient Address</Label>
+                      <Input
+                        id="withdrawAddress"
+                        value={withdrawAddress}
+                        onChange={(event) => setWithdrawAddress(event.target.value)}
+                        placeholder="0x..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="withdrawAmount">Amount ({symbol})</Label>
+                      <Input
+                        id="withdrawAmount"
+                        type="number"
+                        min="0"
+                        step="0.0001"
+                        value={withdrawAmount}
+                        onChange={(event) => setWithdrawAmount(event.target.value)}
+                        placeholder="0.01"
+                      />
+                    </div>
+                    {withdrawError && (
+                      <p className="text-xs text-destructive">{withdrawError}</p>
+                    )}
+                    <Button
+                      className="w-full"
+                      onClick={handleSendWithdrawal}
+                      disabled={isSending || isConfirming || walletLoading}
+                    >
+                      {(isSending || isConfirming) ? (
+                        "Processing..."
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Send Withdrawal
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Balance: {walletLoading ? "Loading..." : `${balance} ${symbol}`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

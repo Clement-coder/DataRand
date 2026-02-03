@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import { useWallets } from "@privy-io/react-auth";
 import { useBalance } from "wagmi";
-import { arbitrumSepolia } from "wagmi/chains";
 
-export function useWalletBalance() {
+export function useWalletBalance(chainId?: number) {
   const { wallets } = useWallets();
   const [address, setAddress] = useState<string | undefined>();
   const [mounted, setMounted] = useState(false);
@@ -22,7 +21,7 @@ export function useWalletBalance() {
 
   const { data: balance, isLoading, refetch } = useBalance({
     address: address as `0x${string}`,
-    chainId: arbitrumSepolia.id,
+    chainId,
     query: {
       enabled: mounted && !!address,
     },
