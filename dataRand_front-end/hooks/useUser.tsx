@@ -37,7 +37,7 @@ export function useUser() {
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("*")
-        .eq("privy_id", userId)
+        .eq("auth_id", userId)
         .maybeSingle();
 
       if (existingProfile) {
@@ -46,7 +46,7 @@ export function useUser() {
       } else {
         // Create profile in database
         const profileData = {
-          privy_id: userId,
+          auth_id: userId, // Use auth_id to match TypeScript interface
           email: privyUser?.email?.address || null,
           full_name: privyUser?.google?.name || privyUser?.twitter?.name || privyUser?.github?.name || null,
           created_at: new Date().toISOString(),
@@ -82,7 +82,7 @@ export function useUser() {
       const { error } = await supabase
         .from("profiles")
         .update(updates)
-        .eq("privy_id", privyUser.id)
+        .eq("auth_id", privyUser.id)
 
       if (!error) {
         setProfile({ ...profile, ...updates })
