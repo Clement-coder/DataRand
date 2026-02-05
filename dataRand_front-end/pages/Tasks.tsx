@@ -166,6 +166,8 @@ useEffect(() => {
     if (!profile) return;
 
     try {
+      console.log("Accepting task:", taskId, "for profile:", profile.id); // Debug log
+      
       // Create assignment
       const { error: assignError } = await supabase
         .from("task_assignments")
@@ -176,6 +178,7 @@ useEffect(() => {
         });
 
       if (assignError) {
+        console.error("Assignment error:", assignError); // Debug log
         let userMessage = "Failed to accept task. Please try again.";
         if (assignError.code === "23505") {
           userMessage = "You've already accepted this task.";
@@ -189,6 +192,8 @@ useEffect(() => {
         return;
       }
 
+      console.log("Assignment created successfully"); // Debug log
+
       // Update task status
       const { error: updateError } = await supabase
         .from("tasks")
@@ -196,6 +201,7 @@ useEffect(() => {
         .eq("id", taskId);
 
       if (updateError) {
+        console.error("Task update error:", updateError); // Debug log
         toast({
           title: "Challenge Accepted (with issues)",
           description: "Task accepted, but there was an issue updating its status.",
@@ -203,6 +209,8 @@ useEffect(() => {
         });
         return;
       }
+
+      console.log("Task status updated successfully"); // Debug log
 
       toast({
         title: "Challenge Accepted! 🦁",
@@ -212,6 +220,7 @@ useEffect(() => {
       router.push("/my-work");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error("Accept task error:", err); // Debug log
       
       toast({
         title: "Error",

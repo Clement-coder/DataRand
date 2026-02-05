@@ -45,17 +45,33 @@ CREATE TABLE IF NOT EXISTS tasks (
   media_type TEXT
 );
 
+-- Create task_assignments table
+CREATE TABLE IF NOT EXISTS task_assignments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+  worker_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'accepted' CHECK (status IN ('accepted', 'in_progress', 'submitted', 'approved', 'rejected')),
+  started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  submitted_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  submission_data JSONB,
+  UNIQUE(task_id, worker_id)
+);
+
 -- Enable RLS
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE task_assignments ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies (drop existing ones first)
 DROP POLICY IF EXISTS "Allow anonymous read for connection test" ON profiles;
 DROP POLICY IF EXISTS "Allow anonymous read tasks" ON tasks;
 DROP POLICY IF EXISTS "Allow anonymous read task_types" ON task_types;
+DROP POLICY IF EXISTS "Allow anonymous read task_assignments" ON task_assignments;
 DROP POLICY IF EXISTS "Allow public insert tasks" ON tasks;
 DROP POLICY IF EXISTS "Allow public insert profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow public insert task_assignments" ON task_assignments;
 
 CREATE POLICY "Allow anonymous read for connection test" ON profiles
 FOR SELECT USING (true);
@@ -72,23 +88,27 @@ FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow anonymous read task_types" ON task_types
 FOR SELECT USING (true);
 
+CREATE POLICY "Allow anonymous read task_assignments" ON task_assignments
+FOR SELECT USING (true);
+
+CREATE POLICY "Allow public insert task_assignments" ON task_assignments
+FOR INSERT WITH CHECK (true);
+
 -- Insert task types
 INSERT INTO task_types (name, description, icon) VALUES
-('Data Labeling', 'Label and categorize data', '🏷️'),
-('Text/Image Annotation', 'Annotate text and images', '📝'),
-('Surveys', 'Complete surveys and questionnaires', '📊'),
-('Content Review', 'Review and moderate content', '🔍'),
-('Transcription', 'Transcribe audio and video files', '🎵')
+('Image Labeling', 'Label and categorize images', '🖼️'),
+('Audio Transcription', 'Transcribe audio files to text', '🎵'),
+('AI Evaluation', 'Evaluate and validate AI outputs', '🤖')
 ON CONFLICT DO NOTHING;
 
 -- Create a sample client profile
-INSERT INTO profiles (id, privy_id, email, full_name, created_at) VALUES
-('11111111-1111-1111-1111-111111111111', 'sample-privy-id', 'client@datarand.com', 'Sample Client', NOW())
-ON CONFLICT DO NOTHING;
+INSERT INTO profiles (id, auth_id, email, full_name, created_at) VALUES
+('11111111-1111-1111-1111-111111111111', 'sample-auth-id', 'client@datarand.com', 'Sample Client', NOW())
+ON CONFLICT (id) DO NOTHING;
 
 -- No sample tasks - users must create their own
 
--- Create storage bucket for task media
+-- Create storagError: Failed to run sql query: ERROR: 42710: policy "Allow anonymous read task_assignments" for table "task_assignments" already existse bucket for task media
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('task_media', 'task_media', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
@@ -99,6 +119,10 @@ DROP POLICY IF EXISTS "Allow authenticated uploads to task_media" ON storage.obj
 DROP POLICY IF EXISTS "Allow public uploads to task_media" ON storage.objects;
 DROP POLICY IF EXISTS "Allow public updates to task_media" ON storage.objects;
 DROP POLICY IF EXISTS "Allow public delete to task_media" ON storage.objects;
+DROP POLICY IF EXISTS "Allow everyone read access to task_media" ON storage.objects;
+DROP POLICY IF EXISTS "Allow everyone uploads to task_media" ON storage.objects;
+DROP POLICY IF EXISTS "Allow everyone updates to task_media" ON storage.objects;
+DROP POLICY IF EXISTS "Allow everyone delete to task_media" ON storage.objects;
 
 CREATE POLICY "Allow everyone read access to task_media"
 ON storage.objects FOR SELECT

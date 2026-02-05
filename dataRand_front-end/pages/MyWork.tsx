@@ -10,6 +10,8 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Textarea } from "@/components/ui/textarea";
 import withAuth from "@/components/withAuth";
 import {
@@ -91,6 +93,8 @@ useEffect(() => {
 
     setLoading(true);
     try {
+      console.log("Fetching assignments for profile:", profile.id); // Debug log
+      
       const { data, error } = await supabase
         .from("task_assignments")
         .select("*, task:tasks(*, task_type:task_types(*))")
@@ -100,6 +104,8 @@ useEffect(() => {
       if (error) {
         console.error("Error fetching assignments:", error);
       } else {
+        console.log("Fetched assignments:", data); // Debug log
+        console.log("Assignment count:", data?.length || 0); // Debug log
         setAssignments((data as any) || []);
       }
     } catch (err) {
@@ -200,69 +206,211 @@ useEffect(() => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-display font-bold">My Work</h1>
-          <p className="text-muted-foreground">
-            Track and complete your accepted tasks
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-display font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              My Work
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Track and complete your accepted tasks
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button 
+              onClick={() => router.push('/client/tasks')}
+              className="gradient-primary text-primary-foreground"
+            >
+              View My Tasks
+            </Button>
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">{assignments.length}</div>
+                <div className="text-xs text-muted-foreground">Total Tasks</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-500">{completedAssignments.length}</div>
+                <div className="text-xs text-muted-foreground">Completed</div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="active" className="gap-2">
-              Active
-              {activeAssignments.length > 0 && (
-                <Badge variant="secondary" className="h-5 px-1.5">
-                  {activeAssignments.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="gap-2">
-              Pending Review
-              {pendingAssignments.length > 0 && (
-                <Badge variant="secondary" className="h-5 px-1.5">
-                  {pendingAssignments.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-          </TabsList>
+        {/* Mobile Filter Dropdown */}
+        {isMobile ? (
+          <div className="space-y-4">
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">
+                  <div className="flex items-center gap-2">
+                    <Play className="h-4 w-4" />
+                    Active ({activeAssignments.length})
+                  </div>
+                </SelectItem>
+                <SelectItem value="pending">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Pending Review ({pendingAssignments.length})
+                  </div>
+                </SelectItem>
+                <SelectItem value="completed">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Completed ({completedAssignments.length})
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
-          {loading ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-48 rounded-xl" />
-              ))}
-            </div>
-          ) : (
-            <>
-              <TabsContent value="active">
-                <AssignmentGrid
-                  assignments={activeAssignments}
-                  onStart={handleStartWork}
-                  onOpenAnswer={openAnswerDialog}
-                  emptyMessage="No active tasks. Go accept some tasks!"
-                />
-              </TabsContent>
+            {/* Status Banner */}
+            {activeTab === "active" && activeAssignments.length > 0 && (
+              <div className="flex items-center gap-2 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <Play className="h-5 w-5 text-blue-500" />
+                <span className="text-sm text-blue-700 dark:text-blue-300">
+                  You have {activeAssignments.length} active task{activeAssignments.length !== 1 ? 's' : ''} to complete
+                </span>
+              </div>
+            )}
+            {activeTab === "pending" && pendingAssignments.length > 0 && (
+              <div className="flex items-center gap-2 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                <span className="text-sm text-yellow-700 dark:text-yellow-300">
+                  {pendingAssignments.length} task{pendingAssignments.length !== 1 ? 's' : ''} awaiting client review
+                </span>
+              </div>
+            )}
+            {activeTab === "completed" && completedAssignments.length > 0 && (
+              <div className="flex items-center gap-2 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <span className="text-sm text-green-700 dark:text-green-300">
+                  {completedAssignments.length} task{completedAssignments.length !== 1 ? 's' : ''} completed
+                </span>
+              </div>
+            )}
 
-              <TabsContent value="pending">
-                <AssignmentGrid
-                  assignments={pendingAssignments}
-                  emptyMessage="No tasks pending review."
-                  showSubmittedAnswer
-                />
-              </TabsContent>
+            {/* Content */}
+            {loading ? (
+              <div className="grid gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-48 rounded-xl" />
+                ))}
+              </div>
+            ) : (
+              <>
+                {activeTab === "active" && (
+                  <AssignmentGrid
+                    assignments={activeAssignments}
+                    onStart={handleStartWork}
+                    onOpenAnswer={openAnswerDialog}
+                    emptyMessage="No active tasks. Go accept some tasks!"
+                  />
+                )}
+                {activeTab === "pending" && (
+                  <AssignmentGrid
+                    assignments={pendingAssignments}
+                    emptyMessage="No tasks pending review."
+                    showSubmittedAnswer
+                  />
+                )}
+                {activeTab === "completed" && (
+                  <AssignmentGrid
+                    assignments={completedAssignments}
+                    emptyMessage="No completed tasks yet."
+                    showSubmittedAnswer
+                  />
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6 bg-muted/50">
+              <TabsTrigger value="active" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Play className="h-4 w-4" />
+                Active
+                {activeAssignments.length > 0 && (
+                  <Badge variant="secondary" className="h-5 px-1.5 bg-primary-foreground text-primary">
+                    {activeAssignments.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="pending" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <AlertCircle className="h-4 w-4" />
+                Pending Review
+                {pendingAssignments.length > 0 && (
+                  <Badge variant="secondary" className="h-5 px-1.5 bg-primary-foreground text-primary">
+                    {pendingAssignments.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <CheckCircle className="h-4 w-4" />
+                Completed
+              </TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="completed">
-                <AssignmentGrid
-                  assignments={completedAssignments}
-                  emptyMessage="No completed tasks yet."
-                  showSubmittedAnswer
-                />
-              </TabsContent>
-            </>
-          )}
-        </Tabs>
+            {loading ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-48 rounded-xl" />
+                ))}
+              </div>
+            ) : (
+              <>
+                <TabsContent value="active" className="space-y-4">
+                  {activeAssignments.length > 0 && (
+                    <div className="flex items-center gap-2 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                      <Play className="h-5 w-5 text-blue-500" />
+                      <span className="text-sm text-blue-700 dark:text-blue-300">
+                        You have {activeAssignments.length} active task{activeAssignments.length !== 1 ? 's' : ''} to complete
+                      </span>
+                    </div>
+                  )}
+                  <AssignmentGrid
+                    assignments={activeAssignments}
+                    onStart={handleStartWork}
+                    onOpenAnswer={openAnswerDialog}
+                    emptyMessage="No active tasks. Go accept some tasks!"
+                  />
+                </TabsContent>
+
+                <TabsContent value="pending" className="space-y-4">
+                  {pendingAssignments.length > 0 && (
+                    <div className="flex items-center gap-2 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                      <AlertCircle className="h-5 w-5 text-yellow-500" />
+                      <span className="text-sm text-yellow-700 dark:text-yellow-300">
+                        {pendingAssignments.length} task{pendingAssignments.length !== 1 ? 's' : ''} awaiting client review
+                      </span>
+                    </div>
+                  )}
+                  <AssignmentGrid
+                    assignments={pendingAssignments}
+                    emptyMessage="No tasks pending review."
+                    showSubmittedAnswer
+                  />
+                </TabsContent>
+
+                <TabsContent value="completed" className="space-y-4">
+                  {completedAssignments.length > 0 && (
+                    <div className="flex items-center gap-2 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm text-green-700 dark:text-green-300">
+                        {completedAssignments.length} task{completedAssignments.length !== 1 ? 's' : ''} completed
+                      </span>
+                    </div>
+                  )}
+                  <AssignmentGrid
+                    assignments={completedAssignments}
+                    emptyMessage="No completed tasks yet."
+                    showSubmittedAnswer
+                  />
+                </TabsContent>
+              </>
+            )}
+          </Tabs>
+        )}
 
         {/* Answer Dialog */}
         <Dialog
@@ -413,11 +561,17 @@ function AssignmentGrid({
 }) {
   if (assignments.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-          <AlertCircle className="h-8 w-8 text-muted-foreground" />
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 mb-6">
+          <AlertCircle className="h-10 w-10 text-primary" />
         </div>
-        <p className="text-muted-foreground">{emptyMessage}</p>
+        <h3 className="text-lg font-semibold mb-2">No Tasks Found</h3>
+        <p className="text-muted-foreground max-w-sm">{emptyMessage}</p>
+        {emptyMessage.includes("accept") && (
+          <Button className="mt-4 gradient-primary text-primary-foreground" onClick={() => window.location.href = '/tasks'}>
+            Browse Available Tasks
+          </Button>
+        )}
       </div>
     );
   }
@@ -432,18 +586,23 @@ function AssignmentGrid({
         const submissionData = assignment.submission_data as { answer?: string } | null;
 
         return (
-          <Card key={assignment.id} className="border-border/50">
+          <Card key={assignment.id} className="border-border/50 hover:border-primary/30 transition-all duration-200 hover:shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <Badge variant="outline" className={status.color}>
+                <Badge variant="outline" className={`${status.color} border-current`}>
                   <StatusIcon className="h-3 w-3 mr-1" />
                   {status.label}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(assignment.started_at), {
-                    addSuffix: true,
-                  })}
-                </span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    {assignment.task?.task_type?.name || "Unknown"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(assignment.started_at), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
               </div>
             </CardHeader>
 
@@ -482,14 +641,14 @@ function AssignmentGrid({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5 text-sm">
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
                   <DollarSign className="h-4 w-4 text-primary" />
                   <span className="font-semibold text-primary">
                     ${(assignment.task?.payout_amount ?? 0).toFixed(2)}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Clock className="h-4 w-4" />
                   <span>~{assignment.task?.estimated_time_minutes ?? 5} min</span>
                 </div>
