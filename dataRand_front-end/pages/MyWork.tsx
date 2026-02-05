@@ -123,10 +123,24 @@ useEffect(() => {
 
   const handleStartWork = async (assignmentId: string) => {
     try {
-      await supabase
+      console.log("Attempting to start work for assignmentId:", assignmentId); // Debug log
+      const { data, error } = await supabase
         .from("task_assignments")
         .update({ status: "in_progress" })
-        .eq("id", assignmentId);
+        .eq("id", assignmentId)
+        .select(); // Select the updated data to log it
+
+      if (error) {
+        console.error("Error updating assignment status:", error); // Debug log
+        toast({
+          title: "Error",
+          description: "Failed to start work. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Assignment status updated successfully:", data); // Debug log
 
       toast({
         title: "Work Started",
@@ -135,7 +149,12 @@ useEffect(() => {
 
       fetchAssignments();
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Error in handleStartWork:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while starting work.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -683,7 +702,10 @@ function AssignmentGrid({
               <CardFooter className="gap-2">
                 {assignment.status === "accepted" && onStart && (
                   <Button
-                    onClick={() => onStart(assignment.id)}
+                    onClick={() => {
+                      console.log("Assignment ID for Start Working:", assignment.id); // Debug log
+                      onStart(assignment.id);
+                    }}
                     className="flex-1 gradient-primary text-primary-foreground"
                   >
                     <Play className="h-4 w-4 mr-2" />
