@@ -38,9 +38,6 @@ function Tasks() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Import local tasks hook
-  const { tasks: localTasks } = useLocalTasks();
-
   const fetchTasks = useCallback(async () => {
     if (!profile) return;
     
@@ -60,7 +57,7 @@ function Tasks() {
       setTaskTypes(loadedTaskTypes);
 
       // Load tasks
-      const { data: tasks, error: tasksError } = await supabase
+      let query = supabase
         .from("tasks")
         .select(`
           *,
@@ -69,41 +66,17 @@ function Tasks() {
         .eq("status", "available")
         .order("created_at", { ascending: false });
 
+      if (selectedType) {
+        query = query.eq('task_type_id', selectedType);
+      }
+      
+      const { data: tasks, error: tasksError } = await query;
+
       if (tasksError) {
         throw tasksError;
       }
 
-      // Filter by selected type if needed
-      let filteredTasks: Task[] = (tasks || []) as Task[];
-      
-      // Add local tasks
-      const localTasksFormatted: Task[] = localTasks.map(localTask => {
-        const matchingType = loadedTaskTypes.find(type => type.id === localTask.task_type_id);
-        
-        return {
-          ...localTask,
-          status: localTask.status as Task['status'],
-          data: null as Task['data'],
-          expires_at: null,
-          priority: 1,
-          task_type: matchingType || { 
-            id: localTask.task_type_id,
-            name: 'unknown',
-            description: 'Unknown task type',
-            icon: null
-          },
-        };
-      });
-      
-      const allTasks: Task[] = [...filteredTasks, ...localTasksFormatted];
-      
-      if (selectedType && allTasks) {
-        filteredTasks = allTasks.filter(task => task.task_type_id === selectedType);
-      } else {
-        filteredTasks = allTasks;
-      }
-
-      setTasks(filteredTasks);
+      setTasks((tasks || []) as Task[]);
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
@@ -118,13 +91,13 @@ function Tasks() {
     } finally {
       setLoading(false);
     }
-  }, [profile, selectedType, toast, localTasks]);
+  }, [profile, selectedType, toast]);
 
   useEffect(() => {
     if (profile) {
       fetchTasks();
     }
-  }, [profile, selectedType, fetchTasks, localTasks]);
+  }, [profile, selectedType, fetchTasks]);
 
   // Real-time subscription for new tasks
 

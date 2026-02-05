@@ -567,55 +567,57 @@ export default function CreateTask() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2 p-3 rounded-lg border">
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        Payout per worker
-                      </p>
-                      <p className="text-sm font-bold">
-                        ${parseFloat(formData.payout_amount || "0").toFixed(2)}
-                      </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2 p-3 rounded-lg border">
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          Payout per worker
+                        </p>
+                        <p className="text-sm font-bold">
+                          ${parseFloat(formData.payout_amount || "0").toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          Number of workers
+                        </p>
+                        <p className="text-sm font-bold">
+                          {parseInt(formData.worker_count || "1")}
+                        </p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          Estimated time per task
+                        </p>
+                        <p className="text-sm font-bold">
+                          {formData.estimated_time_minutes} minutes
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        Number of workers
-                      </p>
-                      <p className="text-sm font-bold">
-                        {parseInt(formData.worker_count || "1")}
-                      </p>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        Estimated time per task
-                      </p>
-                      <p className="text-sm font-bold">
-                        {formData.estimated_time_minutes} minutes
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="space-y-2 p-3 rounded-lg border">
-                     <div className="flex justify-between items-center text-sm">
-                        <p className="text-muted-foreground">Subtotal</p>
-                        <p className="text-muted-foreground">
-                          ${(parseFloat(formData.payout_amount || "0") * parseInt(formData.worker_count || "1")).toFixed(2)}
-                        </p>
-                      </div>
+                    <div className="space-y-2 p-3 rounded-lg border">
                       <div className="flex justify-between items-center text-sm">
-                        <p className="text-muted-foreground">Platform Fee (15%)</p>
-                        <p className="text-muted-foreground">
-                          ${((parseFloat(formData.payout_amount || "0") * parseInt(formData.worker_count || "1")) * 0.15).toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="flex justify-between items-center font-bold text-base">
-                        <p>Total Cost</p>
-                        <p>
-                          ${((parseFloat(formData.payout_amount || "0") * parseInt(formData.worker_count || "1")) * 1.15).toFixed(2)}
-                        </p>
-                      </div>
+                          <p className="text-muted-foreground">Subtotal</p>
+                          <p className="text-muted-foreground">
+                            ${(parseFloat(formData.payout_amount || "0") * parseInt(formData.worker_count || "1")).toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <p className="text-muted-foreground">Platform Fee (15%)</p>
+                          <p className="text-muted-foreground">
+                            ${((parseFloat(formData.payout_amount || "0") * parseInt(formData.worker_count || "1")) * 0.15).toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center font-bold text-base">
+                          <p>Total Cost</p>
+                          <p>
+                            ${((parseFloat(formData.payout_amount || "0") * parseInt(formData.worker_count || "1")) * 1.15).toFixed(2)}
+                          </p>
+                        </div>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground px-3">
                     The platform fee supports our operations and ensures we can connect you with quality workers. Workers receive 100% of the payout amount shown per worker.
