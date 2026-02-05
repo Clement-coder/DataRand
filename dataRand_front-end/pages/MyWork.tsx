@@ -99,8 +99,7 @@ useEffect(() => {
       const { data, error } = await supabase
         .from("task_assignments")
         .select("*, task:tasks(*, task_type:task_types(*))")
-        .eq("worker_id", profile.id)
-        .order("started_at", { ascending: false });
+        .eq("worker_id", profile.id);
 
       if (error) {
         console.error("Error fetching assignments:", error);
@@ -599,9 +598,11 @@ function AssignmentGrid({
                     {assignment.task?.task_type?.name || "Unknown"}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(assignment.started_at), {
-                      addSuffix: true,
-                    })}
+                    {assignment.started_at
+                      ? formatDistanceToNow(new Date(assignment.started_at), {
+                          addSuffix: true,
+                        })
+                      : "N/A"}
                   </span>
                 </div>
               </div>

@@ -142,30 +142,38 @@ useEffect(() => {
       console.log("Accepting task:", taskId, "for profile:", profile.id); // Debug log
       
       // Create assignment
-      const { error: assignError } = await supabase
+      const { data: assignData, error: assignError } = await supabase
         .from("task_assignments")
         .insert({
           task_id: taskId,
           worker_id: profile.id,
           status: "accepted",
-        });
+        })
+        .select(); // Select the inserted data to log it
 
       if (assignError) {
         console.error("Assignment error:", assignError); // Debug log
-        let userMessage = "Failed to accept task. Please try again.";
         if (assignError.code === "23505") {
-          userMessage = "You've already accepted this task.";
+          // If it's a duplicate key error, it means the task was already accepted.
+          // Treat this as a success and redirect to my-work.
+          toast({
+            title: "Challenge Already Accepted",
+            description: "You've already accepted this task. Heading to My Work.",
+          });
+          router.push("/my-work");
+          return;
+        } else {
+          // For any other error, show a destructive toast.
+          toast({
+            title: "Failed to Accept Challenge",
+            description: assignError.message || "Please try again.",
+            variant: "destructive",
+          });
+          return;
         }
-
-        toast({
-          title: "Failed to Accept Challenge",
-          description: userMessage,
-          variant: "destructive",
-        });
-        return;
       }
 
-      console.log("Assignment created successfully"); // Debug log
+      console.log("Assignment created successfully:", assignData); // Debug log
 
       // Update task status
       const { error: updateError } = await supabase
