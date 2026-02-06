@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePrivy } from "@privy-io/react-auth";
 import {
   Select,
   SelectContent,
@@ -83,6 +84,10 @@ function Earnings() {
   const { profile, loading: authLoading } = useAuth();
   const { totalEarnings, earnedToday, educationFundContribution } = useGlobalMetrics();
   const router = useRouter();
+  const { exportWallet, user: privyUser } = usePrivy();
+  
+  // Get Privy embedded wallet address
+  const privyWalletAddress = privyUser?.wallet?.address || null;
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
@@ -98,7 +103,7 @@ function Earnings() {
   const { toast } = useToast();
   const chainId = useChainId();
   const chains = useChains();
-  const { balance, symbol, isLoading: walletLoading, address, refetch: refetchWallet } = useWalletBalance(chainId);
+  const { balance, symbol, isLoading: walletLoading, refetch: refetchWallet } = useWalletBalance(chainId);
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
@@ -109,6 +114,10 @@ function Earnings() {
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: txHash,
   });
+  
+  // Use Privy wallet address
+  const address = privyWalletAddress;
+  
   const availableWalletBalance = useMemo(() => {
     const parsed = Number(balance);
     return Number.isFinite(parsed) ? parsed : 0;
@@ -497,6 +506,10 @@ function Earnings() {
                       <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
                       Refresh
                     </Button>
+                    <Button variant="ghost" size="sm" onClick={exportWallet}>
+                      <Wallet className="h-4 w-4 mr-2" />
+                      Manage
+                    </Button>
                   </div>
                   <div className="pt-2 border-t border-border/60">
                     <p className="text-xs text-muted-foreground">Wallet Balance</p>
@@ -526,9 +539,9 @@ function Earnings() {
 
                   <div className="rounded-lg border border-border/60 p-4 space-y-3">
                     <div>
-                      <p className="text-sm font-semibold">Withdraw</p>
+                      <p className="text-sm font-semibold">Send</p>
                       <p className="text-xs text-muted-foreground">
-                        Send funds to another wallet.
+                        Transfer funds to another wallet.
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -572,7 +585,7 @@ function Earnings() {
                       ) : (
                         <>
                           <Send className="h-4 w-4 mr-2" />
-                          Send Withdrawal
+                          Send Funds
                         </>
                       )}
                     </Button>

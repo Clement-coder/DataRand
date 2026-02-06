@@ -86,7 +86,7 @@ export default function Notifications() {
         console.error("Error fetching notifications:", error);
         setNotifications([]);
       } else {
-        setNotifications(data || []);
+        setNotifications((data as Notification[]) || []);
       }
     } catch (err) {
       console.error("Error:", err);
