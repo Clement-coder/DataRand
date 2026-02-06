@@ -39,7 +39,7 @@ const taskSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   instructions: z.string().min(10, "Instructions must be at least 10 characters"),
   payout_amount: z.number().min(0.01, "Payout must be at least $0.01"),
-  estimated_time_minutes: z.number().min(1, "Estimated time must be at least 1 minute"),
+  estimated_time_minutes: z.number().min(15, "Estimated time must be at least 15 minutes"),
   task_type_id: z.string().uuid("Please select a task type"),
   worker_count: z.number().min(1, "At least 1 worker required").max(1000, "Maximum 1000 workers"),
 });
@@ -68,7 +68,7 @@ export default function CreateTask() {
     description: "",
     instructions: "",
     payout_amount: "",
-    estimated_time_minutes: "5",
+    estimated_time_minutes: "15",
     task_type_id: "",
     worker_count: "1",
   });
@@ -238,6 +238,7 @@ export default function CreateTask() {
         media_url: mediaData?.url || null,
         media_type: mediaData?.type || null,
         status: "available",
+        expires_at: new Date(Date.now() + Math.max(15, parseInt(formData.estimated_time_minutes)) * 60 * 1000).toISOString(),
       };
   
       const { error } = await supabase.from("tasks").insert([newTask]);
@@ -541,8 +542,8 @@ export default function CreateTask() {
                   <Input
                     id="time"
                     type="number"
-                    min="1"
-                    placeholder="5"
+                    min="15"
+                    placeholder="15"
                     value={formData.estimated_time_minutes}
                     onChange={(e) =>
                       setFormData({
@@ -552,6 +553,9 @@ export default function CreateTask() {
                     }
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Minimum 15 minutes required
+                  </p>
                 </div>
               </div>
 

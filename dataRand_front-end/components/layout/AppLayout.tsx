@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useTaskExpiration } from "@/hooks/useTaskExpiration";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -69,6 +70,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+
+  // Check for expired tasks periodically
+  useTaskExpiration();
 
   const navItems = workerNavItems; // Default to worker navigation
 

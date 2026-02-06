@@ -39,6 +39,11 @@ const notificationConfig: Record<
     color: "text-red-500",
     bgColor: "bg-red-500/10",
   },
+  pending_review: {
+    icon: Bell,
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+  },
   payment: {
     icon: DollarSign,
     color: "text-primary",
@@ -202,6 +207,23 @@ export default function Notifications() {
               const config = notificationConfig[notification.type] || notificationConfig.system;
               const Icon = config.icon;
 
+              const handleNotificationClick = () => {
+                if (!notification.read) {
+                  markAsRead(notification.id);
+                }
+                
+                // Navigate based on notification type
+                if (notification.task_id) {
+                  if (notification.type === "pending_review") {
+                    // Client: go to tasks page to review
+                    router.push("/client/tasks?tab=pending");
+                  } else if (notification.type === "task_approved" || notification.type === "task_rejected") {
+                    // Worker: go to my work page
+                    router.push("/my-work?tab=completed");
+                  }
+                }
+              };
+
               return (
                 <Card
                   key={notification.id}
@@ -209,7 +231,7 @@ export default function Notifications() {
                     "border-border/50 transition-all cursor-pointer hover:border-primary/30",
                     !notification.read && "bg-primary/5 border-primary/20"
                   )}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  onClick={handleNotificationClick}
                 >
                   <CardContent className="flex items-start gap-4 py-4">
                     <div

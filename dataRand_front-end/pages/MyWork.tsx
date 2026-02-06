@@ -73,6 +73,15 @@ function MyWork() {
   const [activeTab, setActiveTab] = useState("active");
   const isMobile = useIsMobile();
   
+  // Handle tab query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab && ["active", "pending", "completed"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
+  
   // Answer dialog state
   const [answerDialog, setAnswerDialog] = useState<{
     open: boolean;
@@ -192,12 +201,18 @@ useEffect(() => {
 
       if (updateError) throw updateError;
 
-      // Notify client about pending review
+      // Update task status to submitted
       const task = answerDialog.assignment.task;
-      if (task?.client_id) {
+      if (task?.id) {
+        await supabase
+          .from("tasks")
+          .update({ status: "submitted" })
+          .eq("id", task.id);
+
+        // Notify client about pending review
         await supabase.from("notifications").insert({
           user_id: task.client_id,
-          type: "system",
+          type: "pending_review",
           title: "New Submission to Review",
           message: `A worker has submitted their work for "${task.title}".`,
           task_id: task.id,

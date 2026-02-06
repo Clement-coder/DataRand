@@ -60,6 +60,15 @@ export default function ClientTasks() {
   const [feedback, setFeedback] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
 
+  // Handle tab query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab && ["active", "pending", "completed"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
+
   useEffect(() => {
     if (!authLoading && !profile) {
       router.push("/auth");
