@@ -680,6 +680,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      handle_expired_tasks: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
       process_task_payment: {
         Args: {
           p_approved: boolean
