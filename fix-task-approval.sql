@@ -75,13 +75,23 @@ BEGIN
     WHERE id = v_assignment.worker_id;
   END IF;
   
-  -- Insert notification
+  -- Notify worker
   INSERT INTO notifications (user_id, type, title, message, task_id)
   VALUES (
     v_assignment.worker_id,
     CASE WHEN p_approved THEN 'task_approved' ELSE 'task_rejected' END,
     CASE WHEN p_approved THEN 'Task Approved!' ELSE 'Task Rejected' END,
     COALESCE(p_feedback, CASE WHEN p_approved THEN 'Your work has been approved and payment released.' ELSE 'Your submission was rejected.' END),
+    v_assignment.task_id
+  );
+  
+  -- Notify client
+  INSERT INTO notifications (user_id, type, title, message, task_id)
+  VALUES (
+    v_task.client_id,
+    'system',
+    CASE WHEN p_approved THEN 'Task Completed' ELSE 'Task Rejected' END,
+    CASE WHEN p_approved THEN 'You approved a task submission.' ELSE 'You rejected a task submission.' END,
     v_assignment.task_id
   );
 END;

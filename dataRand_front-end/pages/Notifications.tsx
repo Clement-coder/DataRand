@@ -123,26 +123,30 @@ export default function Notifications() {
   }, [profile]);
 
   const markAsRead = async (notificationId: string) => {
-    await supabase
+    const { error } = await supabase
       .from("notifications")
       .update({ read: true })
       .eq("id", notificationId);
 
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
-    );
+    if (!error) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+      );
+    }
   };
 
   const markAllAsRead = async () => {
     if (!profile) return;
 
-    await supabase
+    const { error } = await supabase
       .from("notifications")
       .update({ read: true })
       .eq("user_id", profile.id)
       .eq("read", false);
 
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (!error) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;

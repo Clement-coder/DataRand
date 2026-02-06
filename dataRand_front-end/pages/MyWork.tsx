@@ -178,7 +178,7 @@ useEffect(() => {
     setAnswerError("");
 
     try {
-      await supabase
+      const { error: updateError } = await supabase
         .from("task_assignments")
         .update({
           status: "submitted",
@@ -189,6 +189,20 @@ useEffect(() => {
           },
         })
         .eq("id", answerDialog.assignment.id);
+
+      if (updateError) throw updateError;
+
+      // Notify client about pending review
+      const task = answerDialog.assignment.task;
+      if (task?.client_id) {
+        await supabase.from("notifications").insert({
+          user_id: task.client_id,
+          type: "system",
+          title: "New Submission to Review",
+          message: `A worker has submitted their work for "${task.title}".`,
+          task_id: task.id,
+        });
+      }
 
       toast({
         title: "Work Submitted! 🎉",
