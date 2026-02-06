@@ -680,6 +680,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_user_account: {
+        Args: {
+          p_profile_id: string
+        }
+        Returns: undefined
+      }
       handle_expired_tasks: {
         Args: Record<string, never>
         Returns: undefined

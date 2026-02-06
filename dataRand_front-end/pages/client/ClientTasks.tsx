@@ -486,6 +486,29 @@ export default function ClientTasks() {
                 </p>
               </div>
 
+              {/* Payment Breakdown */}
+              {reviewDialog.task && (
+                <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Payment Breakdown:</p>
+                  <div className="flex justify-between text-sm">
+                    <span>Worker Payment</span>
+                    <span className="font-medium">${reviewDialog.task.payout_amount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Platform Fee (15%)</span>
+                    <span>${(reviewDialog.task.payout_amount * 0.15).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Education Fund (15%)</span>
+                    <span>${(reviewDialog.task.payout_amount * 0.15).toFixed(2)}</span>
+                  </div>
+                  <div className="pt-2 border-t border-border/50 flex justify-between font-medium">
+                    <span>Total Cost</span>
+                    <span>${(reviewDialog.task.payout_amount * 1.30).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">
                   Feedback (optional)

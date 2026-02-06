@@ -14,16 +14,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { 
   User, Bell, Palette, Globe, Smartphone, Shield, 
-  Save 
+  Save, AlertTriangle 
 } from "lucide-react";
 
 export default function SettingsPage() {
   const { profile, updateProfile } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deletingStep, setDeletingStep] = useState(0);
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || "",
     email: profile?.email || "",
@@ -58,6 +64,57 @@ export default function SettingsPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!profile?.id) return;
+    
+    setDeleteLoading(true);
+    setDeletingStep(0);
+    
+    const steps = [
+      "Deleting notifications...",
+      "Removing transactions...",
+      "Clearing task history...",
+      "Deleting compute sessions...",
+      "Removing profile data...",
+      "Finalizing deletion..."
+    ];
+
+    try {
+      // Animate through deletion steps
+      for (let i = 0; i < steps.length; i++) {
+        setDeletingStep(i + 1);
+        await new Promise(resolve => setTimeout(resolve, 600));
+      }
+
+      // Delete all user data from database
+      const { error } = await supabase.rpc('delete_user_account', {
+        p_profile_id: profile.id
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Account Deleted",
+        description: "Your account and all data have been permanently deleted.",
+      });
+
+      // Sign out and redirect
+      await supabase.auth.signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Delete account error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+      setDeletingStep(0);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -242,17 +299,6 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
               <div className="flex-1">
-                <Label>Auto-Accept Tasks</Label>
-                <p className="text-xs sm:text-sm text-muted-foreground">Automatically accept suitable tasks</p>
-              </div>
-              <Switch
-                checked={preferences.autoAcceptTasks}
-                onCheckedChange={(checked) => setPreferences({ ...preferences, autoAcceptTasks: checked })}
-              />
-            </div>
-            <Separator />
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
-              <div className="flex-1">
                 <Label>Show Earnings Publicly</Label>
                 <p className="text-xs sm:text-sm text-muted-foreground">Display earnings on your profile</p>
               </div>
@@ -280,11 +326,102 @@ export default function SettingsPage() {
               Download My Data
             </Button>
             <Separator />
-            <Button variant="destructive" className="w-full">
+            <Button 
+              variant="destructive" 
+              className="w-full"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
               Delete Account
             </Button>
           </CardContent>
         </Card>
+
+        {/* Delete Account Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Delete Account
+              </DialogTitle>
+              <DialogDescription className="space-y-3 pt-2">
+                {!deleteLoading ? (
+                  <>
+                    <p className="font-semibold">This action cannot be undone.</p>
+                    <p>Deleting your account will permanently remove:</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      <li>Your profile and personal information</li>
+                      <li>All task history and assignments</li>
+                      <li>Your earnings and transaction records</li>
+                      <li>All notifications and messages</li>
+                      <li>Compute session history</li>
+                    </ul>
+                    <p className="text-sm font-medium pt-2">
+                      Any pending withdrawals will be cancelled. Make sure to withdraw your funds before deleting your account.
+                    </p>
+                  </>
+                ) : (
+                  <div className="space-y-4 py-4">
+                    {[
+                      { step: 1, label: "Deleting notifications", icon: "🔔" },
+                      { step: 2, label: "Removing transactions", icon: "💰" },
+                      { step: 3, label: "Clearing task history", icon: "📋" },
+                      { step: 4, label: "Deleting compute sessions", icon: "💻" },
+                      { step: 5, label: "Removing profile data", icon: "👤" },
+                      { step: 6, label: "Finalizing deletion", icon: "🗑️" }
+                    ].map(({ step, label, icon }) => (
+                      <div
+                        key={step}
+                        className={`flex items-center gap-3 transition-all duration-300 ${
+                          deletingStep >= step
+                            ? "opacity-100 translate-x-0"
+                            : "opacity-30 translate-x-2"
+                        }`}
+                      >
+                        <span className="text-2xl">{icon}</span>
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${
+                            deletingStep === step ? "text-destructive" : ""
+                          }`}>
+                            {label}
+                          </p>
+                          {deletingStep > step && (
+                            <p className="text-xs text-muted-foreground">✓ Completed</p>
+                          )}
+                          {deletingStep === step && (
+                            <div className="h-1 w-full bg-muted rounded-full mt-1 overflow-hidden">
+                              <div className="h-full bg-destructive animate-pulse w-full" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            {!deleteLoading && (
+              <DialogFooter className="flex-row gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteDialogOpen(false)}
+                  disabled={deleteLoading}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAccount}
+                  disabled={deleteLoading}
+                  className="flex-1"
+                >
+                  Delete Account
+                </Button>
+              </DialogFooter>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
