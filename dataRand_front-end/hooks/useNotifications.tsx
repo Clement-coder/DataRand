@@ -49,17 +49,14 @@ export function useNotifications() {
         .eq("read", false);
 
       if (error) {
-        if (error.code === 'PGRST205') {
-          console.warn("Notifications table not found. Skipping notification count fetch.");
-        } else if (process.env.NODE_ENV === "development") {
-          console.error("Error fetching notification count:", error.message || error);
-        }
+        console.error("Error fetching notification count:", error);
         setUnreadCount(0);
       } else {
         setUnreadCount(count || 0);
       }
     } catch (err) {
       console.error("Error:", err);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }

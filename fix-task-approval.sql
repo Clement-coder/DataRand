@@ -11,6 +11,8 @@ DROP POLICY IF EXISTS "Allow insert task_assignments" ON task_assignments;
 DROP POLICY IF EXISTS "Allow update task_assignments" ON task_assignments;
 DROP POLICY IF EXISTS "Allow update tasks" ON tasks;
 DROP POLICY IF EXISTS "Allow insert notifications" ON notifications;
+DROP POLICY IF EXISTS "Allow select own notifications" ON notifications;
+DROP POLICY IF EXISTS "Allow update own notifications" ON notifications;
 
 CREATE POLICY "Allow update profiles" ON profiles
 FOR UPDATE USING (true) WITH CHECK (true);
@@ -29,6 +31,12 @@ FOR UPDATE USING (true) WITH CHECK (true);
 
 CREATE POLICY "Allow insert notifications" ON notifications
 FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow select notifications" ON notifications
+FOR SELECT USING (true);
+
+CREATE POLICY "Allow update notifications" ON notifications
+FOR UPDATE USING (true) WITH CHECK (true);
 
 -- Create the process_task_payment function
 CREATE OR REPLACE FUNCTION process_task_payment(

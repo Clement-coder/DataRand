@@ -70,16 +70,22 @@ export default function Notifications() {
 
     setLoading(true);
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("notifications")
         .select("*")
         .eq("user_id", profile.id)
         .order("created_at", { ascending: false })
         .limit(50);
 
-      setNotifications((data as any) || []);
+      if (error) {
+        console.error("Error fetching notifications:", error);
+        setNotifications([]);
+      } else {
+        setNotifications(data || []);
+      }
     } catch (err) {
       console.error("Error:", err);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
