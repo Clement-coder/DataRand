@@ -35,6 +35,7 @@ import {
   AlertCircle,
   Send,
   FileText,
+  RefreshCw,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
@@ -187,6 +188,9 @@ useEffect(() => {
     setAnswerError("");
 
     try {
+      const currentAssignment = answerDialog.assignment;
+      const isRetry = currentAssignment.status === "rejected";
+      
       const { error: updateError } = await supabase
         .from("task_assignments")
         .update({
@@ -196,6 +200,7 @@ useEffect(() => {
             answer: answer.trim(),
             submitted_at: new Date().toISOString(),
           },
+          retry_count: isRetry ? currentAssignment.retry_count + 1 : currentAssignment.retry_count,
         })
         .eq("id", answerDialog.assignment.id);
 
@@ -727,12 +732,12 @@ function AssignmentGrid({
               )}
             </CardContent>
 
-            {(assignment.status === "accepted" || assignment.status === "in_progress") && (
+            {(assignment.status === "accepted" || assignment.status === "in_progress" || (assignment.status === "rejected" && assignment.retry_count < 1)) && (
               <CardFooter className="gap-2">
                 {assignment.status === "accepted" && onStart && (
                   <Button
                     onClick={() => {
-                      console.log("Assignment ID for Start Working:", assignment.id); // Debug log
+                      console.log("Assignment ID for Start Working:", assignment.id);
                       onStart(assignment.id);
                     }}
                     className="flex-1 gradient-primary text-primary-foreground"
@@ -748,6 +753,16 @@ function AssignmentGrid({
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Answer & Submit
+                  </Button>
+                )}
+                {assignment.status === "rejected" && assignment.retry_count < 1 && onOpenAnswer && (
+                  <Button
+                    onClick={() => onOpenAnswer(assignment)}
+                    variant="outline"
+                    className="flex-1 border-primary text-primary hover:bg-primary/10"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry (1 attempt left)
                   </Button>
                 )}
               </CardFooter>
