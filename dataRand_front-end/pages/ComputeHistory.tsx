@@ -167,9 +167,11 @@ export default function ComputeHistory() {
   }, [profile, createSampleSessions]);
 
   useEffect(() => {
-    loadComputeSessions();
-    refreshMetrics();
-  }, [profile, refreshMetrics, loadComputeSessions]);
+    if (profile) {
+      loadComputeSessions();
+      refreshMetrics();
+    }
+  }, [profile]);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
