@@ -36,6 +36,47 @@ const fundTask = asyncHandler(async (req, res) => {
     });
 });
 
+const getTask = asyncHandler(async (req, res) => {
+    const { id: taskId } = req.params;
+
+    const task = await taskService.getTaskById(Number(taskId));
+
+    res.status(200).json({
+        success: true,
+        task,
+    });
+});
+
+const getMyTasks = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    const tasks = await taskService.getTasksByCreator(userId);
+
+    res.status(200).json({
+        success: true,
+        tasks,
+    });
+});
+
+const getAvailableTasks = asyncHandler(async (req, res) => {
+    const tasks = await taskService.getAvailableTasks();
+
+    res.status(200).json({
+        success: true,
+        tasks,
+    });
+});
+
+const getMyAssignedTasks = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    const tasks = await taskService.getAssignedTasks(userId);
+
+    res.status(200).json({
+        success: true,
+        tasks,
+    });
+});
 
 const requestTask = asyncHandler(async (req, res) => {
     const workerId = req.user.id;
@@ -52,5 +93,9 @@ const requestTask = asyncHandler(async (req, res) => {
 export const taskController = {
     createTask,
     fundTask,
+    getTask,
+    getMyTasks,
+    getAvailableTasks,
+    getMyAssignedTasks,
     requestTask,
 };

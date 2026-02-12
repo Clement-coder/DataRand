@@ -2,6 +2,7 @@ import { authService } from '../services/authService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/apiError.js';
 import { logger } from '../utils/logger.js';
+import supabase from '../config/supabaseClient.js';
 
 const loginOrRegister = asyncHandler(async (req, res) => {
     const { privyAccessToken, deviceFingerprint } = req.body;

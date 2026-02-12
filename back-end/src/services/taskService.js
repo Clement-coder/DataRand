@@ -246,8 +246,69 @@ const assignTaskToWorker = async (workerId) => {
     return { task: availableTask, submission };
 };
 
+const getTaskById = async (taskId) => {
+    const { data: task, error } = await supabase
+        .from('tasks')
+        .select('*, creator:users(id, wallet_address)')
+        .eq('id', taskId)
+        .single();
+
+    if (error || !task) {
+        throw new ApiError(404, 'Task not found.');
+    }
+
+    return task;
+};
+
+const getTasksByCreator = async (creatorId) => {
+    const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('creator_id', creatorId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        throw new ApiError(500, 'Failed to fetch tasks.');
+    }
+
+    return tasks || [];
+};
+
+const getAvailableTasks = async () => {
+    const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('status', 'FUNDED')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+    if (error) {
+        throw new ApiError(500, 'Failed to fetch available tasks.');
+    }
+
+    return tasks || [];
+};
+
+const getAssignedTasks = async (workerId) => {
+    const { data: submissions, error } = await supabase
+        .from('submissions')
+        .select('*, task:tasks(*)')
+        .eq('worker_id', workerId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        throw new ApiError(500, 'Failed to fetch assigned tasks.');
+    }
+
+    return submissions || [];
+};
+
 export const taskService = {
     createTask,
     fundTask,
     assignTaskToWorker,
+    getTaskById,
+    getTasksByCreator,
+    getAvailableTasks,
+    getAssignedTasks,
 };
