@@ -21,9 +21,8 @@ const config = {
         platformWalletAddress: process.env.PLATFORM_WALLET_ADDRESS,
     },
     redis: {
-        host: process.env.REDIS_HOST || process.env.REDIS_URL?.replace(/^redis:\/\/[^@]+@/, '').replace(/:\d+$/, ''),
-        port: process.env.REDIS_PORT || parseInt(process.env.REDIS_URL?.match(/:(\d+)$/)?.[1]) || 6379,
-        password: process.env.REDIS_PASSWORD || process.env.REDIS_URL?.match(/redis:\/\/([^@]+)@/)?.[1],
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
     },
 };
 

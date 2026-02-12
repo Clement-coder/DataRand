@@ -14,6 +14,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.95.3
         version: 2.95.3(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      '@upstash/redis':
+        specifier: ^1.36.2
+        version: 1.36.2
       axios:
         specifier: ^1.13.5
         version: 1.13.5
@@ -355,6 +358,9 @@ packages:
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+
+  '@upstash/redis@1.36.2':
+    resolution: {integrity: sha512-C0Yt8hc12vLaQYRG1fMci8iPrLtnTdbJG0HR5T8vKnvEP/1RdMMblsOJs5/jp0JXZJ1oSzMnQz4J9EVezNpI6A==}
 
   abitype@1.2.3:
     resolution: {integrity: sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg==}
@@ -1505,6 +1511,9 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  uncrypto@0.1.3:
+    resolution: {integrity: sha512-Ql87qFHB3s/De2ClA9e0gsnS6zXG27SkTiSJwjCc9MebbfapQfuPzumMIUMi38ezPZVNFcHI9sUIepeQfw8J8Q==}
+
   undefsafe@2.0.5:
     resolution: {integrity: sha512-WxONCrssBM8TSPRqN5EmsjVrsv4A8X12J4ArBiiayv3DyyG3ZlIg6yysuuSYdZsVz3TKcTg2fd//Ujd4CHV1iA==}
 
@@ -1970,6 +1979,10 @@ snapshots:
   '@types/ws@8.18.1':
     dependencies:
       '@types/node': 25.2.2
+
+  '@upstash/redis@1.36.2':
+    dependencies:
+      uncrypto: 0.1.3
 
   abitype@1.2.3(typescript@5.9.3)(zod@3.25.76):
     optionalDependencies:
@@ -3180,6 +3193,8 @@ snapshots:
       mime-types: 3.0.2
 
   typescript@5.9.3: {}
+
+  uncrypto@0.1.3: {}
 
   undefsafe@2.0.5: {}
 

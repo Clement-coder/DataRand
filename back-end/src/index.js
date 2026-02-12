@@ -1,8 +1,7 @@
 import { app } from './app.js';
 import { logger } from './utils/logger.js';
 import dotenv from 'dotenv';
-import { addReputationAnchoringJob } from './jobs/reputationAnchoringJob.js';
-import { addTaskExpirationJob } from './jobs/taskExpirationJob.js';
+import { addReputationAnchoringJob, addTaskExpirationJob } from './jobs/index.js';
 
 dotenv.config();
 
