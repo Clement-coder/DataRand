@@ -6,10 +6,14 @@ import { logger } from './utils/logger.js';
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Health check endpoint - must be before other routes
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'DataRand backend is running.' });
+});
 
 // Request logging
 if (process.env.NODE_ENV === 'development') {
@@ -30,11 +34,6 @@ app.use('/api/v1/tasks', taskRoutes);
 app.use('/api/v1/submissions', submissionRoutes);
 app.use('/api/v1/compute', computeRoutes);
 
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'DataRand backend is running.' });
-});
 
 // Centralized error handling
 app.use(errorMiddleware);
