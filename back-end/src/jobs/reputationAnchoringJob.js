@@ -7,6 +7,7 @@ import { reputationService } from '../services/reputationService.js';
 const connection = config.redis.host ? new IORedis({
     host: config.redis.host,
     port: config.redis.port || 6379,
+    password: config.redis.password,
     maxRetriesPerRequest: null,
 }) : null;
 

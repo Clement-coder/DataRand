@@ -6,17 +6,18 @@ import { wsaService } from '../services/wsaService.js';
 import { computeService } from '../services/computeService.js';
 import supabase from '../config/supabaseClient.js';
 
-const connection = new IORedis({
+const connection = config.redis.host ? new IORedis({
     host: config.redis.host,
-    port: config.redis.port,
+    port: config.redis.port || 6379,
+    password: config.redis.password,
     maxRetriesPerRequest: null,
-});
+}) : null;
 
 // Queue for polling WSA jobs
-const wsaPollingQueue = new Queue('wsaPollingQueue', { connection });
+const wsaPollingQueue = connection ? new Queue('wsaPollingQueue', { connection }) : null;
 
 // Queue for processing ComputeShare tasks
-const computeShareQueue = new Queue('computeShareQueue', { connection });
+const computeShareQueue = connection ? new Queue('computeShareQueue', { connection }) : null;
 
 /**
  * Adds a job to the WSA polling queue.
@@ -24,6 +25,10 @@ const computeShareQueue = new Queue('computeShareQueue', { connection });
  * @param {string} taskId - The internal task ID associated with the WSA job.
  */
 const addWSAPollingJob = async (jobId, taskId) => {
+    if (!wsaPollingQueue) {
+        logger.warn('Redis not configured. WSA polling job disabled.');
+        return;
+    }
     await wsaPollingQueue.add('pollWSAJob', { jobId, taskId }, {
         repeat: { every: 30000 }, // Poll every 30 seconds
         jobId: `wsa-poll-${jobId}`, // Ensure unique job ID for repeat
@@ -37,12 +42,16 @@ const addWSAPollingJob = async (jobId, taskId) => {
  * @param {string} workerId - The ID of the worker (device) processing the task.
  */
 const addComputeShareProcessingJob = async (task, workerId) => {
+    if (!computeShareQueue) {
+        logger.warn('Redis not configured. ComputeShare processing job disabled.');
+        return;
+    }
     await computeShareQueue.add('processComputeShareTask', { task, workerId });
     logger.info(`Added ComputeShare processing job for task: ${task.id}, worker: ${workerId}`);
 };
 
 // Worker for polling WSA jobs
-const wsaPollingWorker = new Worker('wsaPollingQueue', async (job) => {
+const wsaPollingWorker = connection ? new Worker('wsaPollingQueue', async (job) => {
     const { jobId, taskId } = job.data;
     logger.debug(`Processing WSA polling job for jobId: ${jobId}, taskId: ${taskId}`);
 
@@ -86,10 +95,10 @@ const wsaPollingWorker = new Worker('wsaPollingQueue', async (job) => {
         // Re-throw to allow BullMQ to handle retries
         throw error;
     }
-}, { connection });
+}, { connection }) : null;
 
 // Worker for processing ComputeShare tasks
-const computeShareWorker = new Worker('computeShareQueue', async (job) => {
+const computeShareWorker = connection ? new Worker('computeShareQueue', async (job) => {
     const { task, workerId } = job.data;
     logger.debug(`Processing ComputeShare task ${task.id} by worker ${workerId}`);
 
@@ -102,22 +111,26 @@ const computeShareWorker = new Worker('computeShareQueue', async (job) => {
         logger.error(`Error processing ComputeShare task ${task.id} by worker ${workerId}: ${error.message}`);
         throw error;
     }
-}, { connection });
+}, { connection }) : null;
 
-wsaPollingWorker.on('completed', job => {
-    logger.debug(`WSA Polling Job ${job.id} completed.`);
-});
+if (wsaPollingWorker) {
+    wsaPollingWorker.on('completed', job => {
+        logger.debug(`WSA Polling Job ${job.id} completed.`);
+    });
 
-wsaPollingWorker.on('failed', (job, err) => {
-    logger.error(`WSA Polling Job ${job.id} failed with error: ${err.message}`);
-});
+    wsaPollingWorker.on('failed', (job, err) => {
+        logger.error(`WSA Polling Job ${job.id} failed with error: ${err.message}`);
+    });
+}
 
-computeShareWorker.on('completed', job => {
-    logger.debug(`ComputeShare Job ${job.id} completed.`);
-});
+if (computeShareWorker) {
+    computeShareWorker.on('completed', job => {
+        logger.debug(`ComputeShare Job ${job.id} completed.`);
+    });
 
-computeShareWorker.on('failed', (job, err) => {
-    logger.error(`ComputeShare Job ${job.id} failed with error: ${err.message}`);
-});
+    computeShareWorker.on('failed', (job, err) => {
+        logger.error(`ComputeShare Job ${job.id} failed with error: ${err.message}`);
+    });
+}
 
 export { addWSAPollingJob, addComputeShareProcessingJob };
