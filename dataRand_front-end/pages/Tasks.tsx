@@ -6,6 +6,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocalTasks } from "@/hooks/useLocalTasks";
 import { supabase, type Task, type TaskType } from "@/lib/supabase";
+import { api } from "@/lib/datarand";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskFilters } from "@/components/tasks/TaskFilters";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ function Tasks() {
   const { toast } = useToast();
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [backendTasks, setBackendTasks] = useState<any[]>([]);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -56,7 +58,17 @@ function Tasks() {
       const loadedTaskTypes = types as TaskType[] || [];
       setTaskTypes(loadedTaskTypes);
 
-      // Load tasks
+      // Try to fetch from backend API
+      try {
+        const result = await api.getAvailableTasks();
+        if (result.tasks && result.tasks.length > 0) {
+          setBackendTasks(result.tasks);
+        }
+      } catch (e) {
+        console.log("Backend not available, using Supabase");
+      }
+
+      // Load tasks from Supabase
       let query = supabase
         .from("tasks")
         .select(`

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase, type Task, type TaskAssignment } from "@/lib/supabase";
+import { api } from "@/lib/datarand";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,7 @@ import {
   ThumbsDown,
   Play,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -50,6 +52,7 @@ export default function ClientTasks() {
   const isMobile = useIsMobile();
 
   const [tasks, setTasks] = useState<TaskWithAssignments[]>([]);
+  const [backendTasks, setBackendTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("active");
   const [reviewDialog, setReviewDialog] = useState<{
@@ -84,6 +87,15 @@ export default function ClientTasks() {
 
     setLoading(true);
     try {
+      // Fetch from backend API
+      try {
+        const result = await api.getMyTasks();
+        setBackendTasks(result.tasks || []);
+      } catch (e) {
+        console.log("Backend API not available, using Supabase only");
+      }
+
+      // Also fetch from Supabase for additional data
       const { data } = await supabase
         .from("tasks")
         .select(
