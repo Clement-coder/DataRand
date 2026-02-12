@@ -1,0 +1,42 @@
+app = "datarand-backend"
+primary_region = "lax"
+
+[build]
+  builder = "paketobuildpacks/builder:nodejs"
+
+[deploy]
+  release_command = ""
+
+[[services]]
+  http_checks = []
+  internal_port = 8080
+  processes = ["app"]
+  protocol = "tcp"
+
+  [[services.conditions]]
+    http_checks = []
+    interval = "10s"
+    path = "/health"
+    process = "app"
+    protocol = "http"
+    timeout = "2s"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.probes]]
+    failure_threshold = 3
+    interval = "10s"
+    process = "app"
+    success_threshold = 1
+    timeout = "2s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512"

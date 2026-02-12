@@ -7,7 +7,13 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "mocha --recursive test"
+    "test": "mocha --recursive test",
+    "build": "echo 'No build step required'",
+    "deploy": "fly deploy",
+    "logs": "fly logs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [],
   "author": "",
