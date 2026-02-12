@@ -96,7 +96,6 @@ export function DailyImpactCard() {
           </div>
         </div>
 
-        {/* Live Status */}
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
             <Activity className="h-4 w-4" />
