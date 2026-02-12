@@ -11,7 +11,9 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: REDIS_URL
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
         sync: false
       - key: SUPABASE_URL
         sync: false
