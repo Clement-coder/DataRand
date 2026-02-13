@@ -16,6 +16,26 @@ export function useUser() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const formatSupabaseError = (error: unknown) => {
+    if (!error || typeof error !== "object") return error
+    const e = error as {
+      message?: string
+      details?: string
+      hint?: string
+      code?: string
+      status?: number
+      name?: string
+    }
+    return {
+      name: e.name,
+      message: e.message,
+      details: e.details,
+      hint: e.hint,
+      code: e.code,
+      status: e.status,
+    }
+  }
+
   // ================================
   // Effects
   // ================================
@@ -25,21 +45,16 @@ export function useUser() {
     const setAuthToken = async () => {
       if (authenticated && privyUser) {
         const accessToken = await getAccessToken()
-        if (accessToken) {
-          await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: accessToken,
-          })
+        if (!accessToken) return
 
-          try {
-            // Exchange Privy token for DataRand backend JWT.
-            const loginResult = await api.login(accessToken, getDeviceFingerprint())
-            if (loginResult?.token) {
-              localStorage.setItem("datarand_token", loginResult.token)
-            }
-          } catch (error) {
-            console.error("Failed to initialize backend session:", error)
+        try {
+          // Exchange Privy token for DataRand backend JWT.
+          const loginResult = await api.login(accessToken, getDeviceFingerprint())
+          if (loginResult?.token) {
+            localStorage.setItem("datarand_token", loginResult.token)
           }
+        } catch (error) {
+          console.error("Failed to initialize backend session:", error)
         }
       } else {
         await supabase.auth.signOut()
@@ -81,18 +96,40 @@ export function useUser() {
   const fetchOrCreateProfile = async (userId: string) => {
     try {
       setIsLoading(true)
+      const fallbackProfile: Profile = {
+        id: userId,
+        auth_id: userId,
+        email: privyUser?.email?.address || null,
+        full_name:
+          privyUser?.google?.name ||
+          privyUser?.twitter?.name ||
+          privyUser?.github?.name ||
+          null,
+        avatar_url: null,
+        reputation_score: 0,
+        total_earnings: 0,
+        tasks_completed: 0,
+        compute_active: false,
+        compute_earnings: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
 
       // 1️⃣ Try fetch
-      const { data: existingProfile, error: fetchError } = await supabase
+      const { data: existingProfiles, error: fetchError } = await supabase
         .from("profiles")
         .select("*")
         .eq("auth_id", userId)
-        .maybeSingle()
+        .order("created_at", { ascending: true })
+        .limit(1)
 
       if (fetchError) {
-        console.error("Fetch profile error:", fetchError)
+        console.error("Fetch profile error:", formatSupabaseError(fetchError))
+        setProfile(fallbackProfile)
+        return
       }
 
+      const existingProfile = existingProfiles?.[0]
       if (existingProfile) {
         console.log("Found existing profile:", existingProfile)
         setProfile(existingProfile as Profile)
@@ -112,15 +149,22 @@ export function useUser() {
         created_at: new Date().toISOString(),
       }
 
-      const { data: newProfile, error: insertError } = await supabase
+      const { data: newProfiles, error: insertError } = await supabase
         .from("profiles")
-        .insert(profileData)
+        .upsert(profileData, { onConflict: "auth_id" })
         .select()
-        .single()
+        .limit(1)
 
       if (insertError) {
-        console.error("Error creating profile:", insertError)
-        setProfile(null)
+        console.error("Error creating profile:", formatSupabaseError(insertError))
+        setProfile(fallbackProfile)
+        return
+      }
+
+      const newProfile = newProfiles?.[0]
+      if (!newProfile) {
+        console.error("Profile upsert returned no row for user:", userId)
+        setProfile(fallbackProfile)
         return
       }
 
@@ -129,7 +173,24 @@ export function useUser() {
 
     } catch (err) {
       console.error("Profile error:", err)
-      setProfile(null)
+      setProfile({
+        id: userId,
+        auth_id: userId,
+        email: privyUser?.email?.address || null,
+        full_name:
+          privyUser?.google?.name ||
+          privyUser?.twitter?.name ||
+          privyUser?.github?.name ||
+          null,
+        avatar_url: null,
+        reputation_score: 0,
+        total_earnings: 0,
+        tasks_completed: 0,
+        compute_active: false,
+        compute_earnings: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
     } finally {
       setIsLoading(false)
     }

@@ -29,7 +29,7 @@ import {
 
 
 function Tasks() {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -39,6 +39,7 @@ function Tasks() {
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const isPrivyOnlyProfile = Boolean(profile?.id?.startsWith("did:privy:"));
 
   const fetchTasks = useCallback(async () => {
     if (!profile) return;
@@ -149,6 +150,14 @@ useEffect(() => {
 
   const handleAcceptTask = async (taskId: string) => {
     if (!profile) return;
+    if (isPrivyOnlyProfile) {
+      toast({
+        title: "Profile sync required",
+        description: "Your account is authenticated, but profile sync is still pending. Please retry in a moment.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       console.log("Accepting task:", taskId, "for profile:", profile.id); // Debug log
@@ -229,13 +238,31 @@ useEffect(() => {
   );
 
   if (!profile) {
+    const authenticatedDisplayName =
+      user?.google?.name ||
+      user?.twitter?.name ||
+      user?.github?.name ||
+      user?.email?.address ||
+      user?.id;
+
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <p className="text-sm text-muted-foreground">
-            {authLoading ? "Loading profile..." : "No profile found. Please sign in."}
-          </p>
-          {!authLoading && (
+          {authLoading ? (
+            <p className="text-sm text-muted-foreground">Loading profile...</p>
+          ) : user ? (
+            <>
+              <p className="text-sm text-muted-foreground text-center">
+                Signed in as <span className="font-medium">{authenticatedDisplayName}</span>.
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                User profile API URL: <code>/api/v1/auth/profile</code>
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">No profile found. Please sign in.</p>
+          )}
+          {!authLoading && !user && (
             <Button onClick={() => router.push("/auth")}>Go to Sign In</Button>
           )}
         </div>

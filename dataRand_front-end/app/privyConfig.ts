@@ -12,7 +12,6 @@ export const privyConfig: PrivyClientConfig = {
   loginMethods: ['google', 'email'],
 
   appearance: {
-    showWalletLoginFirst: true,
     logo: '/datarand-logo.svg',
   },
 

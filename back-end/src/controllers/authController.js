@@ -56,6 +56,14 @@ const loginOrRegister = asyncHandler(async (req, res) => {
     });
 });
 
+const getProfile = asyncHandler(async (req, res) => {
+    res.status(200).json({
+        success: true,
+        user: req.user,
+    });
+});
+
 export const authController = {
     loginOrRegister,
+    getProfile,
 };
