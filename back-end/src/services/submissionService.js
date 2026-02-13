@@ -82,7 +82,7 @@ const approveSubmission = async (submissionId, approverId) => {
         throw new ApiError(404, 'Submission not found.');
     }
 
-    if (submission.task.creator_id !== approverId) {
+    if (submission.task.client_id !== approverId) {
         throw new ApiError(403, 'Only the task creator can approve this submission.');
     }
 
@@ -149,7 +149,7 @@ const rejectSubmission = async (submissionId, rejecterId) => {
         throw new ApiError(404, 'Submission not found.');
     }
 
-    if (submission.task.creator_id !== rejecterId) {
+    if (submission.task.client_id !== rejecterId) {
         throw new ApiError(403, 'Only the task creator can reject this submission.');
     }
 

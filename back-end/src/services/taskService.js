@@ -54,8 +54,8 @@ const validateTaskInput = (taskData, creator) => {
  * @returns {Promise<void>}
  */
 const splitAndOffloadToWSA = async (task) => {
-    const isLargeTask = task.required_workers > LARGE_TASK_WORKER_THRESHOLD;
-    const isComplexTask = COMPLEX_TASK_CATEGORIES.includes(task.category);
+    const isLargeTask = task.worker_count > LARGE_TASK_WORKER_THRESHOLD;
+    const isComplexTask = COMPLEX_TASK_CATEGORIES.includes(task.task_type_id);
 
     if (isLargeTask || isComplexTask) {
         logger.info(`Task ${task.id} identified as large/complex. Splitting and offloading to WSA.`);
@@ -100,6 +100,12 @@ const createTask = async (taskData, creatorId) => {
 
     const { title, description, category, payoutPerWorker, requiredWorkers, deadline } = taskData;
 
+    const { data: taskType } = await supabase
+        .from('task_types')
+        .select('id')
+        .eq('name', category)
+        .single();
+
     const payoutInWei = ethers.parseEther(payoutPerWorker.toString());
     const subtotal = payoutInWei * BigInt(requiredWorkers);
     const platformFee = (subtotal * BigInt(PLATFORM_FEE_PERCENTAGE)) / 100n;
@@ -108,14 +114,12 @@ const createTask = async (taskData, creatorId) => {
     const newTask = {
         title,
         description,
-        category,
-        creator_id: creatorId,
-        payout_per_worker: payoutInWei.toString(),
-        required_workers: requiredWorkers,
-        platform_fee: platformFee.toString(),
-        total_cost: totalCost.toString(),
-        status: 'DRAFT', // Initial status
-        deadline,
+        client_id: creatorId,
+        task_type_id: taskType?.id || null,
+        payout_amount: payoutInWei.toString(),
+        worker_count: requiredWorkers,
+        status: 'DRAFT',
+        expires_at: deadline,
     };
 
     const { data: createdTask, error: insertError } = await supabase
@@ -160,7 +164,7 @@ const fundTask = async (taskId, userId) => {
         throw new ApiError(404, 'Task not found.');
     }
 
-    if (task.creator_id !== userId) {
+    if (task.client_id !== userId) {
         throw new ApiError(403, 'Only the task creator can fund this task.');
     }
 
@@ -169,10 +173,11 @@ const fundTask = async (taskId, userId) => {
     }
 
     // Call the on-chain funding function
+    const totalCost = BigInt(task.payout_amount) * BigInt(task.worker_count);
     await escrowService.fundTaskOnChain(
         task.id,
         task.creator.wallet_address,
-        task.total_cost
+        totalCost.toString()
     );
 
     // If on-chain funding is successful, update the DB status
@@ -264,7 +269,7 @@ const getTasksByCreator = async (creatorId) => {
     const { data: tasks, error } = await supabase
         .from('tasks')
         .select('*')
-        .eq('creator_id', creatorId)
+        .eq('client_id', creatorId)
         .order('created_at', { ascending: false });
 
     if (error) {
