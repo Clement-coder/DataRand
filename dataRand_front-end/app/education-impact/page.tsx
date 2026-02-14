@@ -1,4 +1,4 @@
-import EducationImpact from "@/pages/EducationImpact";
+import EducationImpact from "@/components/pages/EducationImpact";
 import { Suspense } from "react";
 
 export default function EducationImpactPage() {

@@ -1,4 +1,4 @@
-import ComputeShare from "@/pages/ComputeShare";
+import ComputeShare from "@/components/pages/ComputeShare";
 
 export default function ComputePage() {
   return <ComputeShare />;

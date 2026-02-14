@@ -1,4 +1,4 @@
-import CreateTask from "@/pages/client/CreateTask";
+import CreateTask from "@/components/pages/client/CreateTask";
 
 export default function CreateTaskPage() {
   return <CreateTask />;

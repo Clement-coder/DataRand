@@ -1,4 +1,4 @@
-import MyWork from "@/pages/MyWork";
+import MyWork from "@/components/pages/MyWork";
 
 export default function MyWorkPage() {
   return <MyWork />;

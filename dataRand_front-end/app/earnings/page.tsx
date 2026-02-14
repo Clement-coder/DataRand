@@ -1,4 +1,4 @@
-import Earnings from "@/pages/Earnings";
+import Earnings from "@/components/pages/Earnings";
 
 export default function EarningsPage() {
   return <Earnings />;
