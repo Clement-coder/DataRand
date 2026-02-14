@@ -164,3 +164,7 @@ export default function Auth() {
     </div>
   );
 }
+
+export async function getServerSideProps() {
+  return { props: {} };
+}

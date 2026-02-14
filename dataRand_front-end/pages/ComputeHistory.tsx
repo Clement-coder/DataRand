@@ -243,3 +243,8 @@ export default function ComputeHistory() {
     </AppLayout>
   );
 }
+
+
+export async function getServerSideProps() {
+  return { props: {} };
+}

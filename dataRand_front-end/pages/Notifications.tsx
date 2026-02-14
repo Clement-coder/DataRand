@@ -274,3 +274,8 @@ export default function Notifications() {
     </AppLayout>
   );
 }
+
+
+export async function getServerSideProps() {
+  return { props: {} };
+}

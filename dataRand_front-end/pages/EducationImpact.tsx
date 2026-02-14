@@ -402,3 +402,8 @@ export default function EducationImpact() {
     </AppLayout>
   );
 }
+
+
+export async function getServerSideProps() {
+  return { props: {} };
+}

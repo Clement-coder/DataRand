@@ -6,7 +6,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useGlobalMetrics } from "@/hooks/useGlobalMetrics";
 import withAuth from "@/components/withAuth";
-import { supabase, type Transaction } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -49,6 +49,7 @@ import {
   Send,
   RefreshCw,
   Loader2,
+  Filter,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { WithdrawalDialog } from "@/components/earnings/WithdrawalDialog";
@@ -56,17 +57,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useWalletBalance } from "@/hooks/useWalletBalance";
 import { useChainId, useChains, useSendTransaction, useSwitchChain, useWaitForTransactionReceipt } from "wagmi";
 import QRCode from "react-qr-code";
+import { arbitrum, arbitrumSepolia } from "wagmi/chains";
+import { formatUnits } from "viem";
 
 const isHexAddress = (value: string) => /^0x[a-fA-F0-9]{40}$/.test(value.trim());
 
-const parseEtherAmount = (value: string) => {
+const parseTokenAmount = (value: string, decimals: number) => {
   const trimmed = value.trim();
   if (!trimmed) return BigInt(0);
   const [whole, fraction = ""] = trimmed.split(".");
   const safeWhole = whole.replace(/^0+/, "") || "0";
-  const safeFraction = fraction.replace(/[^0-9]/g, "").slice(0, 18).padEnd(18, "0");
+  const safeFraction = fraction.replace(/[^0-9]/g, "").slice(0, decimals).padEnd(decimals, "0");
   if (!/^\d+$/.test(safeWhole)) return BigInt(0);
-  const base = BigInt(10) ** BigInt(18);
+  const base = BigInt(10) ** BigInt(decimals);
   const wholeWei = BigInt(safeWhole) * base;
   const fractionWei = BigInt(safeFraction || "0");
   return wholeWei + fractionWei;
@@ -80,21 +83,41 @@ interface WithdrawalRequest {
   created_at: string;
 }
 
+interface BlockchainTransaction {
+  hash: string;
+  from: string;
+  to: string;
+  value: string;
+  timestamp: number;
+  blockNumber: number;
+  type: "incoming" | "outgoing";
+  status: "success" | "failed";
+  gasUsed?: string;
+  tokenSymbol?: string;
+  tokenValue?: string;
+}
+
 function Earnings() {
   const { profile, loading: authLoading } = useAuth();
   const { totalEarnings, earnedToday, educationFundContribution } = useGlobalMetrics();
   const router = useRouter();
   const { exportWallet, user: privyUser } = usePrivy();
+  const [selectedChainId, setSelectedChainId] = useState<number>(arbitrumSepolia.id);
+
+  const handleChainToggle = (chainId: number) => {
+    setSelectedChainId(chainId);
+  };
   
   // Get Privy embedded wallet address
   const privyWalletAddress = privyUser?.wallet?.address || null;
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<BlockchainTransaction[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
   const [stats, setStats] = useState({
     available: 0,
+    available_eth: 0,
     pending: 0,
     lifetime: 0,
     educationFund: 0,
@@ -103,7 +126,7 @@ function Earnings() {
   const { toast } = useToast();
   const chainId = useChainId();
   const chains = useChains();
-  const { balance, symbol, isLoading: walletLoading, refetch: refetchWallet } = useWalletBalance(chainId);
+  const { usdcBalance, ethBalance, usdcSymbol, ethSymbol, isLoading: walletLoading, refetch: refetchWallet, usdcDecimals, ethDecimals } = useWalletBalance(selectedChainId);
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
@@ -115,17 +138,116 @@ function Earnings() {
     hash: txHash,
   });
   
+  // Transaction filters
+  const [txTypeFilter, setTxTypeFilter] = useState<"all" | "incoming" | "outgoing">("all");
+  const [txStatusFilter, setTxStatusFilter] = useState<"all" | "success" | "failed">("all");
+  
   // Use Privy wallet address
   const address = privyWalletAddress;
   
   const availableWalletBalance = useMemo(() => {
-    const parsed = Number(balance);
+    const parsed = Number(usdcBalance);
     return Number.isFinite(parsed) ? parsed : 0;
-  }, [balance]);
+  }, [usdcBalance]);
+  
   const currentChain = useMemo(
-    () => chains?.find((chain) => chain.id === chainId) || null,
-    [chains, chainId]
+    () => chains?.find((chain) => chain.id === selectedChainId) || null,
+    [chains, selectedChainId]
   );
+
+  // Fetch blockchain transactions from Arbiscan API
+  const fetchBlockchainTransactions = async (walletAddress: string, chainId: number) => {
+    try {
+      const isTestnet = chainId === arbitrumSepolia.id;
+      const apiUrl = isTestnet 
+        ? `https://api-sepolia.arbiscan.io/api`
+        : `https://api.arbiscan.io/api`;
+      
+      const apiKey = process.env.NEXT_PUBLIC_ARBISCAN_API_KEY || "YourApiKeyToken";
+      
+      // Fetch normal transactions
+      const normalTxResponse = await fetch(
+        `${apiUrl}?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999&sort=desc&apikey=${apiKey}`
+      );
+      const normalTxData = await normalTxResponse.json();
+      
+      // Fetch internal transactions
+      const internalTxResponse = await fetch(
+        `${apiUrl}?module=account&action=txlistinternal&address=${walletAddress}&startblock=0&endblock=99999999&sort=desc&apikey=${apiKey}`
+      );
+      const internalTxData = await internalTxResponse.json();
+      
+      // Fetch ERC20 token transfers
+      const tokenTxResponse = await fetch(
+        `${apiUrl}?module=account&action=tokentx&address=${walletAddress}&startblock=0&endblock=99999999&sort=desc&apikey=${apiKey}`
+      );
+      const tokenTxData = await tokenTxResponse.json();
+
+      const allTxs: BlockchainTransaction[] = [];
+
+      // Process normal transactions
+      if (normalTxData.status === "1" && Array.isArray(normalTxData.result)) {
+        normalTxData.result.forEach((tx: any) => {
+          allTxs.push({
+            hash: tx.hash,
+            from: tx.from,
+            to: tx.to,
+            value: formatUnits(BigInt(tx.value), 18),
+            timestamp: parseInt(tx.timeStamp) * 1000,
+            blockNumber: parseInt(tx.blockNumber),
+            type: tx.from.toLowerCase() === walletAddress.toLowerCase() ? "outgoing" : "incoming",
+            status: tx.isError === "0" ? "success" : "failed",
+            gasUsed: tx.gasUsed,
+            tokenSymbol: "ETH",
+          });
+        });
+      }
+
+      // Process internal transactions
+      if (internalTxData.status === "1" && Array.isArray(internalTxData.result)) {
+        internalTxData.result.forEach((tx: any) => {
+          allTxs.push({
+            hash: tx.hash,
+            from: tx.from,
+            to: tx.to,
+            value: formatUnits(BigInt(tx.value), 18),
+            timestamp: parseInt(tx.timeStamp) * 1000,
+            blockNumber: parseInt(tx.blockNumber),
+            type: tx.from.toLowerCase() === walletAddress.toLowerCase() ? "outgoing" : "incoming",
+            status: tx.isError === "0" ? "success" : "failed",
+            tokenSymbol: "ETH",
+          });
+        });
+      }
+
+      // Process token transactions
+      if (tokenTxData.status === "1" && Array.isArray(tokenTxData.result)) {
+        tokenTxData.result.forEach((tx: any) => {
+          const decimals = parseInt(tx.tokenDecimal) || 18;
+          allTxs.push({
+            hash: tx.hash,
+            from: tx.from,
+            to: tx.to,
+            value: formatUnits(BigInt(tx.value), decimals),
+            timestamp: parseInt(tx.timeStamp) * 1000,
+            blockNumber: parseInt(tx.blockNumber),
+            type: tx.from.toLowerCase() === walletAddress.toLowerCase() ? "outgoing" : "incoming",
+            status: "success",
+            tokenSymbol: tx.tokenSymbol,
+            tokenValue: formatUnits(BigInt(tx.value), decimals),
+          });
+        });
+      }
+
+      // Sort by timestamp descending
+      allTxs.sort((a, b) => b.timestamp - a.timestamp);
+      
+      return allTxs;
+    } catch (error) {
+      console.error("Error fetching blockchain transactions:", error);
+      return [];
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -134,21 +256,14 @@ function Earnings() {
   }, [authLoading, profile, router]);
 
   const fetchData = async () => {
-    if (!profile) return;
+    if (!profile || !address) return;
     
     setLoading(true);
     try {
-      // Fetch transactions
-      const { data: txns } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("profile_id", profile.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      // Fetch blockchain transactions
+      const blockchainTxs = await fetchBlockchainTransactions(address, selectedChainId);
+      setTransactions(blockchainTxs);
 
-      setTransactions((txns as Transaction[]) || []);
-
-      // Fetch withdrawal requests
       const { data: withdrawals } = await supabase
         .from("withdrawal_requests")
         .select("*")
@@ -157,39 +272,36 @@ function Earnings() {
 
       setWithdrawalRequests((withdrawals as WithdrawalRequest[]) || []);
 
-      // Calculate stats
-      const completed = (txns || []).filter(
-        (t) => t.type === "earning" && t.status === "completed"
-      );
-      const pending = (txns || []).filter(
-        (t) => t.type === "earning" && t.status === "pending"
-      );
-      const withdrawn = (txns || []).filter(
-        (t) => t.type === "withdrawal" && t.status === "completed"
-      );
-      const eduFund = (txns || []).filter((t) => t.type === "education_fund");
-
-      const totalEarned = completed.reduce((sum, t) => sum + Number(t.amount), 0);
-      const totalWithdrawn = withdrawn.reduce(
-        (sum, t) => sum + Math.abs(Number(t.amount)),
-        0
-      );
-      const totalPending = pending.reduce((sum, t) => sum + Number(t.amount), 0);
-      const totalEduFund = eduFund.reduce(
-        (sum, t) => sum + Math.abs(Number(t.amount)),
-        0
-      );
-
-      // Calculate pending withdrawals
       const pendingWithdrawals = (withdrawals || [])
         .filter((w) => w.status === "pending" || w.status === "processing")
         .reduce((sum, w) => sum + Number(w.amount), 0);
 
+      // Calculate stats from blockchain transactions
+      const incoming = blockchainTxs.filter(tx => tx.type === "incoming" && tx.status === "success");
+      const outgoing = blockchainTxs.filter(tx => tx.type === "outgoing" && tx.status === "success");
+      
+      const totalReceived = incoming.reduce((sum, tx) => sum + parseFloat(tx.value || "0"), 0);
+      const totalSent = outgoing.reduce((sum, tx) => sum + parseFloat(tx.value || "0"), 0);
+
+      // Fetch ETH price
+      let ethPrice = 0;
+      try {
+        const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+        const data = await response.json();
+        ethPrice = data.ethereum.usd;
+      } catch (e) {
+        console.error("Failed to fetch ETH price", e);
+      }
+
+      const available_eth = parseFloat(ethBalance);
+      const available_usd = available_eth * ethPrice;
+
       setStats({
-        available: totalEarned - totalWithdrawn - pendingWithdrawals,
-        pending: totalPending,
-        lifetime: totalEarned,
-        educationFund: totalEduFund,
+        available: available_usd,
+        available_eth: available_eth,
+        pending: 0,
+        lifetime: totalReceived * ethPrice,
+        educationFund: educationFundContribution,
         pendingWithdrawals,
       });
     } catch (err) {
@@ -201,7 +313,7 @@ function Earnings() {
 
   useEffect(() => {
     fetchData();
-  }, [profile]);
+  }, [profile, address, selectedChainId, ethBalance]);
 
   useEffect(() => {
     if (isConfirmed && txHash) {
@@ -224,20 +336,27 @@ function Earnings() {
     string,
     { label: string; icon: typeof DollarSign; color: string }
   > = {
-    earning: { label: "Earning", icon: ArrowUpRight, color: "text-green-500" },
-    withdrawal: { label: "Withdrawal", icon: ArrowDownRight, color: "text-red-500" },
-    bonus: { label: "Bonus", icon: TrendingUp, color: "text-yellow-500" },
-    education_fund: { label: "Education Fund", icon: GraduationCap, color: "text-blue-500" },
-    platform_fee: { label: "Platform Fee", icon: DollarSign, color: "text-muted-foreground" },
+    incoming: { label: "Received", icon: ArrowUpRight, color: "text-green-500" },
+    outgoing: { label: "Sent", icon: ArrowDownRight, color: "text-red-500" },
   };
 
   const statusConfig: Record<string, { label: string; color: string }> = {
     pending: { label: "Pending", color: "bg-yellow-500/10 text-yellow-500" },
     processing: { label: "Processing", color: "bg-blue-500/10 text-blue-500" },
     completed: { label: "Completed", color: "bg-green-500/10 text-green-500" },
+    success: { label: "Success", color: "bg-green-500/10 text-green-500" },
     failed: { label: "Failed", color: "bg-red-500/10 text-red-500" },
     rejected: { label: "Rejected", color: "bg-red-500/10 text-red-500" },
   };
+
+  // Filter transactions
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx => {
+      if (txTypeFilter !== "all" && tx.type !== txTypeFilter) return false;
+      if (txStatusFilter !== "all" && tx.status !== txStatusFilter) return false;
+      return true;
+    });
+  }, [transactions, txTypeFilter, txStatusFilter]);
 
   const paymentMethodLabels: Record<string, string> = {
     mpesa: "M-Pesa",
@@ -318,10 +437,15 @@ function Earnings() {
 
   const confirmSendWithdrawal = async () => {
     try {
+      if (!usdcDecimals) {
+        setWithdrawError("Could not determine token decimals.");
+        setShowConfirmModal(false);
+        return;
+      }
       await sendTransactionAsync({
         to: withdrawAddress as `0x${string}`,
-        value: parseEtherAmount(withdrawAmount),
-        chainId,
+        value: parseTokenAmount(withdrawAmount, usdcDecimals),
+        chainId: selectedChainId,
       });
       toast({
         title: "Transaction submitted",
@@ -343,6 +467,7 @@ function Earnings() {
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
     : "Not connected";
   const chainLabel = currentChain?.name?.replace(" One", "") || "Select Network";
+  const displayBalance = `${usdcBalance} ${usdcSymbol} / ${ethBalance} ${ethSymbol}`;
 
   return (
     <AppLayout>
@@ -375,10 +500,10 @@ function Earnings() {
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-display font-bold text-primary">
-                  ${totalEarnings.toFixed(2)}
+                  ${stats.available.toFixed(2)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Minimum withdrawal: $5
+                  {stats.available_eth.toFixed(6)} ETH
                 </p>
               </CardContent>
             </Card>
@@ -477,18 +602,21 @@ function Earnings() {
                   <div className="space-y-2">
                     <Label>Network</Label>
                     <Select
-                      value={chainId ? String(chainId) : ""}
-                      onValueChange={(value) => switchChain({ chainId: Number(value) })}
+                      value={String(selectedChainId)}
+                      onValueChange={(value) => {
+                        const newChainId = Number(value);
+                        setSelectedChainId(newChainId);
+                        if (chainId !== newChainId) {
+                          switchChain({ chainId: newChainId });
+                        }
+                      }}
                     >
-                      <SelectTrigger disabled={!chains?.length || isSwitching}>
+                      <SelectTrigger disabled={isSwitching}>
                         <SelectValue placeholder="Select network" />
                       </SelectTrigger>
                       <SelectContent>
-                        {(chains || []).map((chain) => (
-                          <SelectItem key={chain.id} value={String(chain.id)}>
-                            {chain.name}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value={String(arbitrum.id)}>Arbitrum</SelectItem>
+                        <SelectItem value={String(arbitrumSepolia.id)}>Arbitrum Sepolia</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -514,7 +642,7 @@ function Earnings() {
                   <div className="pt-2 border-t border-border/60">
                     <p className="text-xs text-muted-foreground">Wallet Balance</p>
                     <p className="text-2xl font-display font-bold">
-                      {walletLoading ? "Loading..." : `${balance} ${symbol}`}
+                      {walletLoading ? "Loading..." : displayBalance}
                     </p>
                   </div>
                 </div>
@@ -554,15 +682,15 @@ function Earnings() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="withdrawAmount">Amount ({symbol})</Label>
+                      <Label htmlFor="withdrawAmount">Amount ({usdcSymbol})</Label>
                       <Input
                         id="withdrawAmount"
                         type="number"
                         min="0"
-                        step="0.0001"
+                        step="0.01"
                         value={withdrawAmount}
                         onChange={(event) => setWithdrawAmount(event.target.value)}
-                        placeholder="0.01"
+                        placeholder="10.00"
                       />
                     </div>
                     {withdrawError && (
@@ -590,7 +718,7 @@ function Earnings() {
                       )}
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      Balance: {walletLoading ? "Loading..." : `${balance} ${symbol}`}
+                      Balance: {walletLoading ? "Loading..." : displayBalance}
                     </p>
                   </div>
                 </div>
@@ -644,7 +772,32 @@ function Earnings() {
         {/* Transaction History */}
         <Card className="border-border/50">
           <CardHeader>
-            <CardTitle className="text-lg">Transaction History</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Transaction History</CardTitle>
+              <div className="flex items-center gap-2">
+                <Select value={txTypeFilter} onValueChange={(value: any) => setTxTypeFilter(value)}>
+                  <SelectTrigger className="w-[140px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="incoming">Incoming</SelectItem>
+                    <SelectItem value="outgoing">Outgoing</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={txStatusFilter} onValueChange={(value: any) => setTxStatusFilter(value)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="success">Success</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -653,13 +806,13 @@ function Earnings() {
                   <Skeleton key={i} className="h-12" />
                 ))}
               </div>
-            ) : transactions.length === 0 ? (
+            ) : filteredTransactions.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
                   <DollarSign className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <p className="text-muted-foreground">
-                  No transactions yet. Complete tasks to start earning!
+                  No transactions found. Start using your wallet to see transaction history!
                 </p>
               </div>
             ) : (
@@ -668,14 +821,15 @@ function Earnings() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Type</TableHead>
-                      <TableHead>Description</TableHead>
+                      <TableHead>Hash</TableHead>
+                      <TableHead>From/To</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead className="text-right">Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.map((txn) => {
+                    {filteredTransactions.map((txn) => {
                       const type = typeConfig[txn.type] || {
                         label: txn.type,
                         icon: DollarSign,
@@ -688,15 +842,28 @@ function Earnings() {
                       const TypeIcon = type.icon;
 
                       return (
-                        <TableRow key={txn.id}>
+                        <TableRow key={txn.hash}>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <TypeIcon className={`h-4 w-4 ${type.color}`} />
                               <span className="font-medium">{type.label}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {txn.description || "-"}
+                          <TableCell className="font-mono text-xs">
+                            <a 
+                              href={`https://${selectedChainId === arbitrumSepolia.id ? 'sepolia.' : ''}arbiscan.io/tx/${txn.hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              {txn.hash.slice(0, 10)}...
+                            </a>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">
+                            {txn.type === "incoming" 
+                              ? `${txn.from.slice(0, 6)}...${txn.from.slice(-4)}`
+                              : `${txn.to.slice(0, 6)}...${txn.to.slice(-4)}`
+                            }
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className={status.color}>
@@ -704,13 +871,11 @@ function Earnings() {
                             </Badge>
                           </TableCell>
                           <TableCell className={`text-right font-medium ${type.color}`}>
-                            {txn.type === "withdrawal" || txn.type === "education_fund" || txn.type === "platform_fee"
-                              ? "-"
-                              : "+"}
-                            ${Math.abs(Number(txn.amount)).toFixed(2)}
+                            {txn.type === "outgoing" ? "-" : "+"}
+                            {parseFloat(txn.value).toFixed(6)} {txn.tokenSymbol}
                           </TableCell>
                           <TableCell className="text-right text-muted-foreground text-sm">
-                            {formatDistanceToNow(new Date(txn.created_at), {
+                            {formatDistanceToNow(new Date(txn.timestamp), {
                               addSuffix: true,
                             })}
                           </TableCell>
@@ -757,7 +922,7 @@ function Earnings() {
               <div className="space-y-2">
                 <Label>Amount</Label>
                 <div className="p-3 rounded-lg bg-muted font-semibold">
-                  {withdrawAmount} {symbol}
+                  {withdrawAmount} {usdcSymbol}
                 </div>
               </div>
               <div className="space-y-2">
@@ -798,3 +963,7 @@ function Earnings() {
 }
 
 export default withAuth(Earnings);
+
+export async function getServerSideProps() {
+  return { props: {} };
+}

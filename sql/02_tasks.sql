@@ -92,6 +92,7 @@ create table if not exists public.transactions (
   description text,
   status text not null default 'pending',
   task_assignment_id uuid references public.task_assignments(id) on delete set null,
+  chain_id integer,
   created_at timestamptz not null default now()
 );
 

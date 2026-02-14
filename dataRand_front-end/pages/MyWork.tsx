@@ -775,3 +775,8 @@ function AssignmentGrid({
 }
 
 export default withAuth(MyWork);
+
+
+export async function getServerSideProps() {
+  return { props: {} };
+}

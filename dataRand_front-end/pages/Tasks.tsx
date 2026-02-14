@@ -364,3 +364,8 @@ useEffect(() => {
 }
 
 export default withAuth(Tasks);
+
+
+export async function getServerSideProps() {
+  return { props: {} };
+}

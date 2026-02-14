@@ -24,7 +24,7 @@ export default function ComputeShare() {
   const { profile, loading: authLoading } = useAuth();
   const { phoneState, laptopState, loading: devicesLoading, toggling, toggleDevice, currentDevice } = useComputeDevices();
   const router = useRouter();
-  const { balance: walletBalance, symbol: walletSymbol } = useWalletBalance(ARBITRUM_SEPOLIA_CHAIN_ID);
+  const { usdcBalance: walletBalance, usdcSymbol: walletSymbol } = useWalletBalance(ARBITRUM_SEPOLIA_CHAIN_ID);
   
   const [stats, setStats] = useState({
     totalEarned: 0,
@@ -375,4 +375,8 @@ export default function ComputeShare() {
       </div>
     </AppLayout>
   );
+}
+
+export async function getServerSideProps() {
+  return { props: {} };
 }

@@ -15,10 +15,8 @@ export const privyConfig: PrivyClientConfig = {
     logo: '/datarand-logo.svg',
   },
 
-  defaultChain: base,
+  defaultChain: arbitrum,
   supportedChains: [
-    base,
-    baseSepolia,
     arbitrum,
     arbitrumSepolia,
   ],
