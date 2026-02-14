@@ -7,6 +7,9 @@ dotenv.config();
 
 const PORT = process.env.PORT || 3001;
 
+// Force redeploy - wallet fix applied
+console.log('Starting DataRand backend with wallet address fix...');
+
 const server = app.listen(PORT, () => {
     logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     // Initialize background jobs
