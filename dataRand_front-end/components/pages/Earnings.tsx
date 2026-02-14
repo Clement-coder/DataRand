@@ -480,71 +480,71 @@ function Earnings() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
         <div>
-          <h1 className="text-2xl font-display font-bold flex items-center gap-2">
-            <DollarSign className="h-6 w-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-display font-bold flex items-center gap-2">
+            <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Earnings
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Track your income and withdrawals
           </p>
         </div>
 
         {/* Stats Cards */}
         {loading ? (
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-32 rounded-xl" />
+              <Skeleton key={i} className="h-24 sm:h-32 rounded-xl" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
             <Card className="border-border/50 bg-gradient-to-br from-primary/10 to-transparent">
-              <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2">
-                  <Wallet className="h-4 w-4" />
-                  Available Balance
+              <CardHeader className="pb-2 p-3 sm:p-6">
+                <CardDescription className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate">Available</span>
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-display font-bold text-primary">
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <p className="text-xl sm:text-3xl font-display font-bold text-primary">
                   ${stats.available.toFixed(2)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats.available_eth.toFixed(6)} ETH
+                  {stats.available_eth.toFixed(4)} ETH
                 </p>
               </CardContent>
             </Card>
 
             <Card className="border-border/50">
-              <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Pending
+              <CardHeader className="pb-2 p-3 sm:p-6">
+                <CardDescription className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate">Pending</span>
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-display font-bold">
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <p className="text-xl sm:text-3xl font-display font-bold">
                   ${stats.pending.toFixed(2)}
                 </p>
                 {stats.pendingWithdrawals > 0 && (
-                  <p className="text-xs text-yellow-500 mt-1">
-                    ${stats.pendingWithdrawals.toFixed(2)} withdrawal pending
+                  <p className="text-xs text-yellow-500 mt-1 truncate">
+                    ${stats.pendingWithdrawals.toFixed(2)} pending
                   </p>
                 )}
               </CardContent>
             </Card>
 
             <Card className="border-border/50">
-              <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Lifetime Earned
+              <CardHeader className="pb-2 p-3 sm:p-6">
+                <CardDescription className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate">Lifetime</span>
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-display font-bold">
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <p className="text-xl sm:text-3xl font-display font-bold">
                   ${totalEarnings.toFixed(2)}
                 </p>
               </CardContent>
