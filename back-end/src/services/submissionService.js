@@ -74,7 +74,7 @@ const submitTaskWork = async (submissionId, workerId, submissionData) => {
 const approveSubmission = async (submissionId, approverId) => {
     const { data: submission, error: submissionError } = await supabase
         .from('submissions')
-        .select('*, task:tasks(*), worker:users(id, wallet_address)')
+        .select('*, task:tasks(*), worker:users(id, wallet_address, embedded_wallet_address)')
         .eq('id', submissionId)
         .single();
 
@@ -103,8 +103,16 @@ const approveSubmission = async (submissionId, approverId) => {
         throw new ApiError(500, 'Failed to approve submission.');
     }
 
+    // Get worker wallet address (prefer embedded wallet)
+    const workerWalletAddress = submission.worker.embedded_wallet_address || submission.worker.wallet_address;
+    
+    if (!workerWalletAddress) {
+        logger.error(`No wallet address found for worker ${submission.worker.id}`);
+        throw new ApiError(400, 'Worker wallet address not found. Cannot release payment.');
+    }
+
     // Release payout to worker
-    await escrowService.releaseBatchPayouts(submission.task.id, [submission.worker.wallet_address]);
+    await escrowService.releaseBatchPayouts(submission.task.id, [workerWalletAddress]);
 
     // Update worker reputation (positive)
     await reputationService.updateUserReputation(submission.worker_id, 10); // Example score change
@@ -122,10 +130,11 @@ const approveSubmission = async (submissionId, approverId) => {
         // Continue without completing task if query fails
     } else if (remainingSubmissions.length === 0) {
         // All submissions are now approved or rejected, complete the task on-chain
+        // This will trigger platform fee payment
         await escrowService.completeTaskOnChain(submission.task.id);
         // Update task status in DB
         await supabase.from('tasks').update({ status: 'COMPLETED' }).eq('id', submission.task.id);
-        logger.info(`Task ${submission.task.id} completed on-chain and in DB.`);
+        logger.info(`Task ${submission.task.id} completed on-chain. Platform fee sent to platform wallet.`);
     }
 
     logger.info(`Submission ${submissionId} approved by ${approverId}.`);

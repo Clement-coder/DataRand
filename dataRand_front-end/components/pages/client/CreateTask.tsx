@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useWalletBalance } from "@/hooks/useWalletBalance";
 import { supabase, type TaskType } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Image, Headphones, Brain, Plus, DollarSign, Users, Globe, X, Video, Info, FileText, Clock, Wallet, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
 import { api, CONFIG, getDeviceFingerprint, getPrivyWalletAddress } from "@/lib/datarand";
+import { arbitrumSepolia } from "wagmi/chains";
 
 const AFRICAN_COUNTRIES = [
   "Nigeria", "Kenya", "South Africa", "Ghana", "Ethiopia", "Tanzania",
@@ -76,10 +78,12 @@ export default function CreateTask() {
   const [createdTask, setCreatedTask] = useState<CreatedTask | null>(null);
   const [walletReady, setWalletReady] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [walletBalance, setWalletBalance] = useState<string>("0");
   const [backendAuthReady, setBackendAuthReady] = useState(false);
   const [isPreparingSession, setIsPreparingSession] = useState(false);
   const [backendAuthError, setBackendAuthError] = useState<string | null>(null);
+  
+  // Use wallet balance hook
+  const { ethBalance, usdcBalance, ethSymbol, usdcSymbol, isLoading: balanceLoading, refetch: refetchBalance } = useWalletBalance(arbitrumSepolia.id);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -98,7 +102,7 @@ export default function CreateTask() {
   const subtotal = payoutETH * workers;
   const platformFee = subtotal * (CONFIG.PLATFORM_FEE_PERCENTAGE / 100);
   const totalCost = subtotal + platformFee;
-  const hasEnoughBalance = parseFloat(walletBalance) >= totalCost;
+  const hasEnoughBalance = parseFloat(ethBalance) >= totalCost;
 
   const ensureBackendAuth = useCallback(async () => {
     setIsPreparingSession(true);
@@ -151,7 +155,7 @@ export default function CreateTask() {
     }
   }, [authLoading, profile, ensureBackendAuth]);
 
-  // Get Privy embedded wallet address and balance
+  // Get Privy embedded wallet address
   useEffect(() => {
     const address = getPrivyWalletAddress(privyUser);
     if (address) {
@@ -161,34 +165,13 @@ export default function CreateTask() {
       setWalletAddress(address);
       setWalletReady(Boolean(matchingWallet));
       if (matchingWallet) {
-        fetchWalletBalance(address, matchingWallet);
-      } else {
-        setWalletBalance("0");
+        refetchBalance();
       }
     } else {
       setWalletAddress(null);
       setWalletReady(false);
-      setWalletBalance("0");
     }
   }, [privyUser, wallets]);
-
-  const fetchWalletBalance = async (
-    address: string,
-    wallet: { getEthereumProvider: () => Promise<{ request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }> }
-  ) => {
-    try {
-      const provider = await wallet.getEthereumProvider();
-      const balanceHex = await provider.request({
-        method: "eth_getBalance",
-        params: [address, "latest"],
-      });
-      const balanceWei = BigInt(String(balanceHex));
-      const balanceEth = Number(balanceWei) / 1e18;
-      setWalletBalance(balanceEth.toFixed(4));
-    } catch (e) {
-      console.log("Could not fetch balance:", e);
-    }
-  };
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -667,8 +650,15 @@ export default function CreateTask() {
                           <p className="text-xs sm:text-sm text-muted-foreground truncate">{walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}</p>
                         </div>
                       </div>
-                      <div className="text-left sm:text-right">
-                        <p className="font-bold text-base sm:text-lg">{walletBalance} ETH</p>
+                      <div className="text-left sm:text-right space-y-1">
+                        <div className="flex items-center gap-2 justify-start sm:justify-end">
+                          <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" alt="USDC" className="h-4 w-4" />
+                          <p className="font-bold text-sm sm:text-base">{usdcBalance} {usdcSymbol}</p>
+                        </div>
+                        <div className="flex items-center gap-2 justify-start sm:justify-end">
+                          <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-4 w-4" />
+                          <p className="font-bold text-sm sm:text-base">{ethBalance} {ethSymbol}</p>
+                        </div>
                         <p className={`text-xs sm:text-sm ${hasEnoughBalance ? "text-green-600" : "text-red-500"}`}>
                           {hasEnoughBalance ? "✓ Sufficient" : "⚠️ Insufficient"}
                         </p>

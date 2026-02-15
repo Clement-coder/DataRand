@@ -353,10 +353,29 @@ const fundTask = async (taskId, userId) => {
     }
 
     // Get creator wallet address for transaction preparation
-    const creatorWalletAddress = await getWalletAddressForProfile(task.client_id);
+    let creatorWalletAddress = await getWalletAddressForProfile(task.client_id);
+    
+    // If no wallet found, try to get from users table directly using auth_id
+    if (!creatorWalletAddress) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('auth_id')
+            .eq('id', task.client_id)
+            .maybeSingle();
+        
+        if (profile?.auth_id) {
+            const { data: user } = await supabase
+                .from('users')
+                .select('wallet_address, embedded_wallet_address')
+                .eq('privy_did', profile.auth_id)
+                .maybeSingle();
+            
+            creatorWalletAddress = user?.embedded_wallet_address || user?.wallet_address;
+        }
+    }
     
     if (!creatorWalletAddress) {
-        throw new ApiError(400, 'No wallet address found. Please create an embedded wallet first.');
+        throw new ApiError(400, 'No wallet address found. Please connect your wallet or create an embedded wallet first.');
     }
 
     // Calculate total cost including platform fee
