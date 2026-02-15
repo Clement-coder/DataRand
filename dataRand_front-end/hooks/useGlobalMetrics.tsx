@@ -86,7 +86,14 @@ export function GlobalMetricsProvider({ children }: { children: ReactNode }) {
           return sum;
         }, 0);
 
-        const totalEarnings = profileData.total_earnings || 0;
+        // Convert from Wei/smallest unit to dollars
+        // If stored in Wei (18 decimals), divide by 10^18
+        // If stored in USDC smallest unit (6 decimals), divide by 10^6
+        const totalEarningsRaw = profileData.total_earnings || 0;
+        const totalEarnings = totalEarningsRaw > 1000000 
+          ? totalEarningsRaw / 1000000  // Assume USDC (6 decimals)
+          : totalEarningsRaw;  // Already in dollars
+        
         const educationContribution = totalEarnings * 0.15;
 
         setMetrics(prev => ({
