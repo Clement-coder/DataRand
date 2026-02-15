@@ -48,6 +48,8 @@ import {
   Copy,
   Send,
   RefreshCw,
+  Eye,
+  EyeOff,
   Loader2,
   Filter,
 } from "lucide-react";
@@ -118,6 +120,7 @@ function Earnings() {
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
+  const [balanceVisible, setBalanceVisible] = useState(true);
   const [stats, setStats] = useState({
     available: 0,
     available_eth: 0,
@@ -607,9 +610,9 @@ function Earnings() {
               </div>
             ) : (
               <div className="grid gap-4 lg:grid-cols-3">
-                <div className="rounded-lg border border-border/60 p-4 space-y-3 bg-muted/20">
+                <div className="rounded-lg border border-border/60 p-3 sm:p-4 space-y-3 bg-muted/20">
                   <div className="space-y-2">
-                    <Label>Network</Label>
+                    <Label className="text-xs sm:text-sm">Network</Label>
                     <Select
                       value={String(selectedChainId)}
                       onValueChange={(value) => {
@@ -623,7 +626,7 @@ function Earnings() {
                         }
                       }}
                     >
-                      <SelectTrigger disabled={isSwitching}>
+                      <SelectTrigger disabled={isSwitching} className="text-xs sm:text-sm">
                         <SelectValue placeholder="Select network" />
                       </SelectTrigger>
                       <SelectContent>
@@ -634,32 +637,52 @@ function Earnings() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Address</span>
-                    <Badge variant="outline">{chainLabel}</Badge>
+                    <Badge variant="outline" className="text-xs">{chainLabel}</Badge>
                   </div>
-                  <div className="text-sm font-mono break-all">{address}</div>
+                  <div className="text-xs sm:text-sm font-mono break-all">{address}</div>
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={handleCopyAddress}>
-                      <Copy className="h-4 w-4 mr-2" />
+                    <Button variant="outline" size="sm" onClick={handleCopyAddress} className="text-xs">
+                      <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                       Copy
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={handleRefreshWallet} disabled={isRefreshing}>
-                      <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+                    <Button variant="ghost" size="sm" onClick={handleRefreshWallet} disabled={isRefreshing} className="text-xs">
+                      <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
                       Refresh
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={exportWallet}>
-                      <Wallet className="h-4 w-4 mr-2" />
+                    <Button variant="ghost" size="sm" onClick={exportWallet} className="text-xs">
+                      <Wallet className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                       Manage
                     </Button>
                   </div>
-                  <div className="pt-2 border-t border-border/60">
-                    <p className="text-xs text-muted-foreground">Wallet Balance</p>
-                    <p className="text-2xl font-display font-bold">
-                      {walletLoading ? "Loading..." : displayBalance}
-                    </p>
+                  <div className="pt-2 border-t border-border/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">Wallet Balance</p>
+                      <Button variant="ghost" size="sm" onClick={() => setBalanceVisible(!balanceVisible)} className="h-6 w-6 p-0">
+                        {balanceVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                      </Button>
+                    </div>
+                    {balanceVisible ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" alt="USDC" className="h-5 w-5" />
+                          <p className="text-lg sm:text-xl font-display font-bold">
+                            {walletLoading ? "..." : `${parseFloat(usdcBalance).toFixed(2)} ${usdcSymbol}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-5 w-5" />
+                          <p className="text-lg sm:text-xl font-display font-bold">
+                            {walletLoading ? "..." : `${parseFloat(ethBalance).toFixed(4)} ${ethSymbol}`}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-lg sm:text-xl font-display font-bold">••••••</p>
+                    )}
                   </div>
                 </div>
 
-                <div className="lg:col-span-2 grid gap-4 md:grid-cols-2">
+                <div className="lg:col-span-2 grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <div className="rounded-lg border border-border/60 p-4 space-y-3">
                     <div>
                       <p className="text-sm font-semibold">Receive</p>
@@ -783,13 +806,13 @@ function Earnings() {
 
         {/* Transaction History */}
         <Card className="border-border/50">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Transaction History</CardTitle>
-              <div className="flex items-center gap-2">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle className="text-base sm:text-lg">Transaction History</CardTitle>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Select value={txTypeFilter} onValueChange={(value: any) => setTxTypeFilter(value)}>
-                  <SelectTrigger className="w-[140px]">
-                    <Filter className="h-4 w-4 mr-2" />
+                  <SelectTrigger className="w-full sm:w-[140px] text-xs sm:text-sm">
+                    <Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -799,7 +822,7 @@ function Earnings() {
                   </SelectContent>
                 </Select>
                 <Select value={txStatusFilter} onValueChange={(value: any) => setTxStatusFilter(value)}>
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-full sm:w-[140px] text-xs sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -811,7 +834,7 @@ function Earnings() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             {loading ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
@@ -819,11 +842,11 @@ function Earnings() {
                 ))}
               </div>
             ) : filteredTransactions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
-                  <DollarSign className="h-6 w-6 text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center px-4">
+                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-muted mb-3">
+                  <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
                 </div>
-                <p className="text-muted-foreground">
+                <p className="text-sm sm:text-base text-muted-foreground">
                   No transactions found. Start using your wallet to see transaction history!
                 </p>
               </div>

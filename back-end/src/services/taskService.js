@@ -298,10 +298,10 @@ const createTask = async (taskData, creatorId) => {
 };
 
 /**
- * Funds a task by calling the on-chain escrow service and updating its status.
+ * Funds a task by preparing transaction data for the user to sign.
  * @param {number} taskId - The ID of the task to fund.
  * @param {string} userId - The ID of the user attempting to fund the task.
- * @returns {Promise<object>} The updated task object.
+ * @returns {Promise<object>} Transaction data for the frontend to sign.
  */
 const fundTask = async (taskId, userId) => {
     console.log('fundTask called with taskId:', taskId, 'userId:', userId);
@@ -336,42 +336,86 @@ const fundTask = async (taskId, userId) => {
         throw new ApiError(400, `Task cannot be funded. Status is: ${task.status}`);
     }
 
-    // Get creator wallet address for on-chain funding
+    // Get creator wallet address for transaction preparation
     const creatorWalletAddress = await getWalletAddressForProfile(task.client_id);
     
-    // If wallet address exists, try on-chain funding
-    if (creatorWalletAddress) {
-        try {
-            const totalCost = BigInt(task.payout_amount) * BigInt(task.worker_count);
-            await escrowService.fundTaskOnChain(
-                task.id,
-                creatorWalletAddress,
-                totalCost.toString()
-            );
-            console.log('On-chain funding successful');
-        } catch (error) {
-            console.warn('On-chain funding failed, continuing with DB update:', error.message);
-        }
-    } else {
-        console.warn('No wallet address found, skipping on-chain funding');
+    if (!creatorWalletAddress) {
+        throw new ApiError(400, 'No wallet address found. Please create an embedded wallet first.');
     }
 
-    // If on-chain funding is successful, update the DB status
+    // Calculate total cost including platform fee
+    const subtotal = BigInt(task.payout_amount) * BigInt(task.worker_count);
+    const platformFee = (subtotal * BigInt(PLATFORM_FEE_PERCENTAGE)) / 100n;
+    const totalCost = subtotal + platformFee;
+
+    // Prepare transaction data for the frontend
+    const txData = await escrowService.fundTaskOnChain(
+        task.id,
+        creatorWalletAddress,
+        totalCost.toString()
+    );
+
+    logger.info(`Transaction data prepared for task ${taskId} funding`);
+    
+    return {
+        task,
+        txData: txData.txData,
+        totalCost: totalCost.toString(),
+        totalCostEth: ethers.formatEther(totalCost)
+    };
+};
+
+/**
+ * Confirms task funding after user has signed the transaction.
+ * @param {number} taskId - The ID of the task.
+ * @param {string} userId - The ID of the user.
+ * @param {string} txHash - The transaction hash.
+ * @returns {Promise<object>} The updated task.
+ */
+const confirmTaskFunding = async (taskId, userId, txHash) => {
+    const requesterProfileId = await resolveProfileId(userId);
+    if (!requesterProfileId) {
+        throw new ApiError(404, 'Requesting user profile not found.');
+    }
+
+    const { data: task, error: taskError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', taskId)
+        .single();
+
+    if (taskError || !task) {
+        throw new ApiError(404, 'Task not found.');
+    }
+
+    if (task.client_id !== requesterProfileId) {
+        throw new ApiError(403, 'Only the task creator can confirm funding.');
+    }
+
+    // Verify the transaction on-chain
+    const isFunded = await escrowService.verifyTaskFunding(taskId);
+    
+    if (!isFunded) {
+        throw new ApiError(400, 'Task funding not confirmed on-chain. Please wait for transaction confirmation.');
+    }
+
+    // Update task status to FUNDED
     const { data: updatedTask, error: updateError } = await supabase
         .from('tasks')
-        .update({ status: 'FUNDED' })
+        .update({ 
+            status: 'FUNDED',
+            funding_tx_hash: txHash 
+        })
         .eq('id', taskId)
         .select()
         .single();
 
     if (updateError) {
         logger.error(`Failed to update task status to FUNDED for task ${taskId}: ${updateError.message}`);
-        // Note: At this point, the contract is funded but the DB is not updated.
-        // A reconciliation job might be needed for production to handle such cases.
-        throw new ApiError(500, 'Task was funded on-chain, but failed to update status in database.');
+        throw new ApiError(500, 'Failed to update task status in database.');
     }
 
-    logger.info(`Task ${taskId} successfully funded and status updated to FUNDED.`);
+    logger.info(`Task ${taskId} successfully funded and confirmed. TX: ${txHash}`);
     return updatedTask;
 };
 
@@ -492,6 +536,7 @@ const getAssignedTasks = async (workerId) => {
 export const taskService = {
     createTask,
     fundTask,
+    confirmTaskFunding,
     assignTaskToWorker,
     getTaskById,
     getTasksByCreator,

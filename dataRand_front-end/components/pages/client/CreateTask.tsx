@@ -331,7 +331,72 @@ export default function CreateTask() {
         throw new Error("Please sign in again to initialize your backend session.");
       }
 
-      await api.fundTask(createdTask.id);
+      // Step 1: Get transaction data from backend
+      const fundingData = await api.fundTask(createdTask.id);
+      
+      if (!fundingData?.txData) {
+        throw new Error("Failed to prepare transaction data.");
+      }
+
+      // Step 2: Get the user's embedded wallet
+      const embeddedWallet = wallets.find(
+        (wallet) => wallet.address.toLowerCase() === walletAddress?.toLowerCase()
+      );
+
+      if (!embeddedWallet) {
+        throw new Error("Embedded wallet not found.");
+      }
+
+      // Step 3: Get the Ethereum provider from the wallet
+      const provider = await embeddedWallet.getEthereumProvider();
+
+      // Step 4: Send the transaction for the user to sign
+      toast({ 
+        title: "Sign Transaction", 
+        description: "Please sign the transaction in your wallet to fund the task.", 
+      });
+
+      const txHash = await provider.request({
+        method: "eth_sendTransaction",
+        params: [{
+          from: fundingData.txData.from,
+          to: fundingData.txData.to,
+          data: fundingData.txData.data,
+          value: `0x${BigInt(fundingData.txData.value).toString(16)}`,
+        }],
+      });
+
+      // Step 5: Wait for transaction confirmation
+      toast({ 
+        title: "Transaction Sent", 
+        description: "Waiting for confirmation...", 
+      });
+
+      // Poll for transaction receipt
+      let receipt = null;
+      let attempts = 0;
+      while (!receipt && attempts < 30) {
+        try {
+          receipt = await provider.request({
+            method: "eth_getTransactionReceipt",
+            params: [txHash],
+          });
+          if (!receipt) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            attempts++;
+          }
+        } catch (e) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          attempts++;
+        }
+      }
+
+      if (!receipt) {
+        throw new Error("Transaction confirmation timeout. Please check your wallet.");
+      }
+
+      // Step 6: Confirm funding with backend
+      await api.confirmTaskFunding(createdTask.id, txHash as string);
       
       toast({ title: "Task funded!", description: "Your task is now live!" });
       setStep("complete");
@@ -342,10 +407,16 @@ export default function CreateTask() {
       const message = error instanceof Error ? error.message : "Failed to fund task.";
       
       // Show helpful message for wallet issues
-      if (message.includes("wallet")) {
+      if (message.includes("wallet") || message.includes("sign")) {
         toast({ 
-          title: "Wallet Setup Required", 
-          description: "Please create an embedded wallet in your profile settings first.", 
+          title: "Transaction Failed", 
+          description: message, 
+          variant: "destructive" 
+        });
+      } else if (message.includes("rejected") || message.includes("denied")) {
+        toast({ 
+          title: "Transaction Rejected", 
+          description: "You rejected the transaction. Please try again.", 
           variant: "destructive" 
         });
       } else {

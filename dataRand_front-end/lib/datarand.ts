@@ -94,6 +94,13 @@ class DataRandAPI {
     });
   }
 
+  async confirmTaskFunding(taskId: string, txHash: string): Promise<any> {
+    return this.request(`/tasks/${taskId}/confirm-funding`, {
+      method: 'POST',
+      body: JSON.stringify({ txHash }),
+    });
+  }
+
   async getMyTasks() {
     return this.request('/tasks');
   }

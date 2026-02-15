@@ -35,29 +35,31 @@ const createTaskOnChain = async (taskId, creatorAddress, payoutPerWorker, requir
 
 const fundTaskOnChain = async (taskId, creatorAddress, totalAmountInWei) => {
     try {
-        logger.info(`Funding task ${taskId} with ${ethers.formatEther(totalAmountInWei)} ETH...`);
+        logger.info(`Preparing funding transaction for task ${taskId} with ${ethers.formatEther(totalAmountInWei)} ETH...`);
 
-        const tx = await escrowContract.fundTask(taskId, {
-            value: totalAmountInWei
-        });
+        // Return transaction data for the frontend to sign with user's wallet
+        const txData = {
+            to: escrowContract.target,
+            data: escrowContract.interface.encodeFunctionData('fundTask', [taskId]),
+            value: totalAmountInWei.toString(),
+            from: creatorAddress
+        };
 
-        const receipt = await tx.wait();
-
-        if (!receipt.status) {
-            throw new Error('Transaction reverted on-chain');
-        }
-
-        const onChainStatus = await escrowContract.getTaskStatus(taskId);
-        if (onChainStatus !== TASK_STATUS.Funded) {
-            logger.error(`On-chain status mismatch after funding: expected Funded (1), got ${onChainStatus}`);
-            throw new ApiError(500, 'On-chain task status mismatch after funding');
-        }
-
-        logger.info(`Task ${taskId} funded successfully. Transaction: ${tx.hash}`);
-        return { hash: tx.hash, blockNumber: receipt.blockNumber };
+        logger.info(`Transaction data prepared for task ${taskId}`);
+        return { txData };
     } catch (error) {
-        logger.error(`Failed to fund task ${taskId} on-chain: ${error.message}`);
-        throw new ApiError(500, 'Blockchain transaction failed during task funding.');
+        logger.error(`Failed to prepare funding transaction for task ${taskId}: ${error.message}`);
+        throw new ApiError(500, 'Failed to prepare blockchain transaction for task funding.');
+    }
+};
+
+const verifyTaskFunding = async (taskId) => {
+    try {
+        const onChainStatus = await escrowContract.getTaskStatus(taskId);
+        return onChainStatus === TASK_STATUS.Funded;
+    } catch (error) {
+        logger.error(`Failed to verify task ${taskId} funding: ${error.message}`);
+        return false;
     }
 };
 
@@ -171,6 +173,7 @@ const getTaskStatusOnChain = async (taskId) => {
 export const escrowService = {
     createTaskOnChain,
     fundTaskOnChain,
+    verifyTaskFunding,
     assignWorkersOnChain,
     releaseBatchPayouts,
     completeTaskOnChain,

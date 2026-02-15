@@ -27,11 +27,29 @@ const fundTask = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Task ID is required.');
     }
 
-    const fundedTask = await taskService.fundTask(taskId, userId);
+    const result = await taskService.fundTask(taskId, userId);
 
     res.status(200).json({
         success: true,
-        message: 'Task successfully funded.',
+        message: 'Transaction data prepared. Please sign with your wallet.',
+        ...result,
+    });
+});
+
+const confirmTaskFunding = asyncHandler(async (req, res) => {
+    const { id: taskId } = req.params;
+    const userId = req.user.id;
+    const { txHash } = req.body;
+
+    if (!taskId || !txHash) {
+        throw new ApiError(400, 'Task ID and transaction hash are required.');
+    }
+
+    const fundedTask = await taskService.confirmTaskFunding(taskId, userId, txHash);
+
+    res.status(200).json({
+        success: true,
+        message: 'Task successfully funded and confirmed.',
         task: fundedTask,
     });
 });
@@ -93,6 +111,7 @@ const requestTask = asyncHandler(async (req, res) => {
 export const taskController = {
     createTask,
     fundTask,
+    confirmTaskFunding,
     getTask,
     getMyTasks,
     getAvailableTasks,

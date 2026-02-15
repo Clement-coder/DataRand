@@ -22,9 +22,12 @@ router.post('/', taskController.createTask);
 // Route to get a specific task
 router.get('/:id', taskController.getTask);
 
-// Route to fund a task
+// Route to fund a task (prepare transaction)
 // The :id parameter will be the task's ID from the database
 router.post('/:id/fund', taskController.fundTask);
+
+// Route to confirm task funding after user signs transaction
+router.post('/:id/confirm-funding', taskController.confirmTaskFunding);
 
 // Route for a worker to request a new task to work on
 router.post('/request', taskController.requestTask);
