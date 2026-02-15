@@ -104,18 +104,10 @@ function Earnings() {
   const { totalEarnings, earnedToday, educationFundContribution } = useGlobalMetrics();
   const router = useRouter();
   const { exportWallet, user: privyUser } = usePrivy();
-  const [selectedChainId, setSelectedChainId] = useState<number>(arbitrumSepolia.id);
-
-  const handleChainToggle = (chainId: number) => {
-    console.log('Chain toggled to:', chainId);
-    setSelectedChainId(chainId);
-    setTransactions([]); // Clear transactions immediately
-    setLoading(true); // Show loading state
-  };
+  const { toast } = useToast();
   
-  // Get Privy embedded wallet address
-  const privyWalletAddress = privyUser?.wallet?.address || null;
-
+  // State hooks
+  const [selectedChainId, setSelectedChainId] = useState<number>(arbitrumSepolia.id);
   const [transactions, setTransactions] = useState<BlockchainTransaction[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,28 +121,29 @@ function Earnings() {
     educationFund: 0,
     pendingWithdrawals: 0,
   });
-  const { toast } = useToast();
-  const chainId = useChainId();
-  const chains = useChains();
-  const { usdcBalance, ethBalance, usdcSymbol, ethSymbol, isLoading: walletLoading, refetch: refetchWallet, usdcDecimals, ethDecimals } = useWalletBalance(selectedChainId);
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [txTypeFilter, setTxTypeFilter] = useState<"all" | "incoming" | "outgoing">("all");
+  const [txStatusFilter, setTxStatusFilter] = useState<"all" | "success" | "failed">("all");
+  
+  // Wagmi hooks
+  const chainId = useChainId();
+  const chains = useChains();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const { mutateAsync: sendTransactionAsync, data: txHash, isPending: isSending } = useSendTransaction();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: txHash,
   });
+  const { usdcBalance, ethBalance, usdcSymbol, ethSymbol, isLoading: walletLoading, refetch: refetchWallet, usdcDecimals, ethDecimals } = useWalletBalance(selectedChainId);
   
-  // Transaction filters
-  const [txTypeFilter, setTxTypeFilter] = useState<"all" | "incoming" | "outgoing">("all");
-  const [txStatusFilter, setTxStatusFilter] = useState<"all" | "success" | "failed">("all");
-  
-  // Use Privy wallet address
+  // Derived values
+  const privyWalletAddress = privyUser?.wallet?.address || null;
   const address = privyWalletAddress;
   
+  // Memoized values
   const availableWalletBalance = useMemo(() => {
     const parsed = Number(usdcBalance);
     return Number.isFinite(parsed) ? parsed : 0;
@@ -160,6 +153,21 @@ function Earnings() {
     () => chains?.find((chain) => chain.id === selectedChainId) || null,
     [chains, selectedChainId]
   );
+  
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx => {
+      if (txTypeFilter !== "all" && tx.type !== txTypeFilter) return false;
+      if (txStatusFilter !== "all" && tx.status !== txStatusFilter) return false;
+      return true;
+    });
+  }, [transactions, txTypeFilter, txStatusFilter]);
+
+  const handleChainToggle = (chainId: number) => {
+    console.log('Chain toggled to:', chainId);
+    setSelectedChainId(chainId);
+    setTransactions([]); // Clear transactions immediately
+    setLoading(true); // Show loading state
+  };
 
   // Fetch blockchain transactions from Arbiscan API
   const fetchBlockchainTransactions = async (walletAddress: string, chainId: number) => {
@@ -361,14 +369,6 @@ function Earnings() {
     rejected: { label: "Rejected", color: "bg-red-500/10 text-red-500" },
   };
 
-  // Filter transactions
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(tx => {
-      if (txTypeFilter !== "all" && tx.type !== txTypeFilter) return false;
-      if (txStatusFilter !== "all" && tx.status !== txStatusFilter) return false;
-      return true;
-    });
-  }, [transactions, txTypeFilter, txStatusFilter]);
 
   const paymentMethodLabels: Record<string, string> = {
     mpesa: "M-Pesa",
