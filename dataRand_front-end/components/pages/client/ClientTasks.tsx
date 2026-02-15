@@ -7,6 +7,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase, type Task, type TaskAssignment } from "@/lib/supabase";
 import { api } from "@/lib/datarand";
+import { formatPayoutAmount } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -296,7 +297,7 @@ export default function ClientTasks() {
                               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
                                 <DollarSign className="h-4 w-4 text-primary" />
                                 <span className="font-semibold text-primary">
-                                  ${task.payout_amount.toFixed(2)}
+                                  ${formatPayoutAmount(task.payout_amount)}
                                 </span>
                               </div>
                               <span className="flex items-center gap-1 text-muted-foreground">
@@ -423,7 +424,7 @@ export default function ClientTasks() {
                               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
                                 <DollarSign className="h-4 w-4 text-primary" />
                                 <span className="font-semibold text-primary">
-                                  ${task.payout_amount.toFixed(2)}
+                                  ${formatPayoutAmount(task.payout_amount)}
                                 </span>
                               </div>
                               <span className="flex items-center gap-1 text-muted-foreground">
@@ -516,7 +517,7 @@ export default function ClientTasks() {
                   <p className="text-xs font-medium text-muted-foreground mb-2">Payment Breakdown:</p>
                   <div className="flex justify-between text-sm">
                     <span>Worker Payment</span>
-                    <span className="font-medium">${reviewDialog.task.payout_amount.toFixed(2)}</span>
+                    <span className="font-medium">${formatPayoutAmount(reviewDialog.task.payout_amount)}</span>
                   </div>
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Platform Fee (15%)</span>

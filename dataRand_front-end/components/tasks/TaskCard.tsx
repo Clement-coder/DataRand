@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
+import { formatPayoutAmount } from "@/lib/currency";
 import {
   ClockIcon,
   EarningsIcon,
@@ -112,7 +113,7 @@ export function TaskCard({ task, onAccept, showAccept = true }: TaskCardProps) {
               <EarningsIcon size={14} className="text-primary group-hover:animate-pulse" />
             </div>
             <span className="font-bold text-lg text-primary group-hover:text-primary/90 transition-colors duration-300">
-              ${task.payout_amount.toFixed(2)}
+              ${formatPayoutAmount(task.payout_amount)}
             </span>
           </div>
 

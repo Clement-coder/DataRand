@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase, type TaskAssignment, type Task } from "@/lib/supabase";
+import { formatPayoutAmount } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -563,7 +564,7 @@ useEffect(() => {
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
                   <DollarSign className="h-5 w-5 text-primary" />
                   <span className="text-sm">
-                    You'll earn <strong className="text-primary">${answerDialog.assignment.task.payout_amount.toFixed(2)}</strong> when approved
+                    You'll earn <strong className="text-primary">${formatPayoutAmount(answerDialog.assignment.task.payout_amount)}</strong> when approved
                   </span>
                 </div>
               </div>
@@ -700,7 +701,7 @@ function AssignmentGrid({
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
                   <DollarSign className="h-4 w-4 text-primary" />
                   <span className="font-semibold text-primary">
-                    ${(assignment.task?.payout_amount ?? 0).toFixed(2)}
+                    ${formatPayoutAmount(assignment.task?.payout_amount ?? 0)}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -720,7 +721,7 @@ function AssignmentGrid({
               {assignment.status === "approved" && (
                 <div className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 text-green-500 text-sm">
                   <CheckCircle className="h-4 w-4" />
-                  <span>Payment of ${(assignment.task?.payout_amount ?? 0).toFixed(2)} added to earnings</span>
+                  <span>Payment of ${formatPayoutAmount(assignment.task?.payout_amount ?? 0)} added to earnings</span>
                 </div>
               )}
 
