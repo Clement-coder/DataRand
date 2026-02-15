@@ -403,7 +403,7 @@ const confirmTaskFunding = async (taskId, userId, txHash) => {
     const { data: updatedTask, error: updateError } = await supabase
         .from('tasks')
         .update({ 
-            status: 'FUNDED',
+            status: 'available',  // Make task available to workers
             funding_tx_hash: txHash 
         })
         .eq('id', taskId)

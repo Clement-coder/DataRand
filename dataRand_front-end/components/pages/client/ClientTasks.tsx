@@ -181,7 +181,7 @@ export default function ClientTasks() {
     if (activeTab === "pending")
       return task.status === "submitted";
     if (activeTab === "completed")
-      return ["approved", "rejected"].includes(task.status);
+      return ["approved", "rejected", "completed"].includes(task.status);
     return true;
   });
 
@@ -190,7 +190,7 @@ export default function ClientTasks() {
 
   const activeTasksCount = tasks.filter(t => ["available", "assigned", "in_progress", "DRAFT", "FUNDED"].includes(t.status)).length;
   const pendingTasksCount = tasks.filter(t => t.status === "submitted").length;
-  const completedTasksCount = tasks.filter(t => ["approved", "rejected"].includes(t.status)).length;
+  const completedTasksCount = tasks.filter(t => ["approved", "rejected", "completed"].includes(t.status)).length;
 
   if (authLoading || !profile) {
     return null;
