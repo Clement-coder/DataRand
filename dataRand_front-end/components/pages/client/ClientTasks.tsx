@@ -226,22 +226,13 @@ export default function ClientTasks() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">
-                  <div className="flex items-center gap-2">
-                    <Play className="h-4 w-4" />
-                    Active ({activeTasksCount})
-                  </div>
+                  Active ({activeTasksCount})
                 </SelectItem>
                 <SelectItem value="pending">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    Pending Review ({pendingTasksCount})
-                  </div>
+                  Pending Review ({pendingTasksCount})
                 </SelectItem>
                 <SelectItem value="completed">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Completed ({completedTasksCount})
-                  </div>
+                  Completed ({completedTasksCount})
                 </SelectItem>
               </SelectContent>
             </Select>

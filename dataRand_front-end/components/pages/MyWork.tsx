@@ -298,22 +298,13 @@ useEffect(() => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">
-                  <div className="flex items-center gap-2">
-                    <Play className="h-4 w-4" />
-                    Active ({activeAssignments.length})
-                  </div>
+                  Active ({activeAssignments.length})
                 </SelectItem>
                 <SelectItem value="pending">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    Pending Review ({pendingAssignments.length})
-                  </div>
+                  Pending Review ({pendingAssignments.length})
                 </SelectItem>
                 <SelectItem value="completed">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Completed ({completedAssignments.length})
-                  </div>
+                  Completed ({completedAssignments.length})
                 </SelectItem>
               </SelectContent>
             </Select>

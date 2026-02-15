@@ -646,16 +646,10 @@ function Earnings() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={String(arbitrum.id)}>
-                          <div className="flex items-center gap-2">
-                            <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum" className="h-4 w-4" />
-                            Arbitrum
-                          </div>
+                          Arbitrum
                         </SelectItem>
                         <SelectItem value={String(arbitrumSepolia.id)}>
-                          <div className="flex items-center gap-2">
-                            <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum Sepolia" className="h-4 w-4" />
-                            Arbitrum Sepolia
-                          </div>
+                          Arbitrum Sepolia
                         </SelectItem>
                       </SelectContent>
                     </Select>
