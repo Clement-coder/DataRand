@@ -100,9 +100,9 @@ export function useComputeDevices() {
     heartbeatRef.current = setInterval(async () => {
       try {
         await api.sendHeartbeat(deviceId);
-        console.log(`Heartbeat sent for ${device}`);
+        console.log(`💓 Heartbeat sent for ${device} - database updated with last_seen timestamp`);
       } catch (error) {
-        console.error(`Heartbeat failed for ${device}:`, error);
+        console.error(`❌ Heartbeat failed for ${device}:`, error);
       }
     }, 90000); // 90 seconds
   };
@@ -119,9 +119,9 @@ export function useComputeDevices() {
     if (deviceId) {
       try {
         await api.deactivateDevice(deviceId);
-        console.log(`Device deactivated: ${device}`);
+        console.log(`🛑 Device deactivated in database: ${device}`);
       } catch (error) {
-        console.error(`Failed to deactivate ${device}:`, error);
+        console.error(`❌ Failed to deactivate ${device}:`, error);
       }
     }
   };
@@ -309,11 +309,18 @@ export function useComputeDevices() {
         let registeredDeviceId = null;
         try {
           const specs = await detectDeviceSpecs();
+          console.log('📊 Registering device with REAL specs:', specs);
+          
           const response = await api.registerDevice(specs);
           registeredDeviceId = response.data.id;
+          
+          console.log('✅ Device registered in database with ID:', registeredDeviceId);
+          console.log('💾 Stored in compute_devices table:', response.data);
+          
           await startHeartbeat(device, registeredDeviceId);
+          console.log('💓 Heartbeat started - will update database every 90 seconds');
         } catch (error) {
-          console.error('Failed to register device:', error);
+          console.error('❌ Failed to register device:', error);
         }
         
         // Start current device
