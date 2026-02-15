@@ -136,11 +136,11 @@ const getWalletAddressForProfile = async (profileId) => {
 
     const { data: user } = await supabase
         .from('users')
-        .select('wallet_address')
+        .select('wallet_address, embedded_wallet_address')
         .eq('privy_did', profile.auth_id)
         .maybeSingle();
 
-    return user?.wallet_address || null;
+    return user?.embedded_wallet_address || user?.wallet_address || null;
 };
 
 /**

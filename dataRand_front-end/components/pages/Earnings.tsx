@@ -313,13 +313,13 @@ function Earnings() {
       }
 
       const available_eth = parseFloat(ethBalance);
-      const available_usd = available_eth * ethPrice;
+      const available_usd = parseFloat((available_eth * ethPrice).toFixed(2));
 
       setStats({
         available: available_usd,
         available_eth: available_eth,
         pending: 0,
-        lifetime: totalReceived * ethPrice,
+        lifetime: parseFloat((totalReceived * ethPrice).toFixed(2)),
         educationFund: educationFundContribution,
         pendingWithdrawals,
       });
