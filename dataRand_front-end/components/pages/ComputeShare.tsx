@@ -242,9 +242,12 @@ export default function ComputeShare() {
                   {Number(walletBalance || 0).toFixed(2)} {walletSymbol}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Live Arbitrum Sepolia wallet balance
-              </p>
+              <div className="flex items-center gap-1 mt-1">
+                <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum" className="h-3 w-3" />
+                <p className="text-xs text-muted-foreground">
+                  Live Arbitrum Sepolia wallet balance
+                </p>
+              </div>
             </CardContent>
           </Card>
 

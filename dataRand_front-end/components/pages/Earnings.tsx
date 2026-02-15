@@ -645,14 +645,27 @@ function Earnings() {
                         <SelectValue placeholder="Select network" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={String(arbitrum.id)}>Arbitrum</SelectItem>
-                        <SelectItem value={String(arbitrumSepolia.id)}>Arbitrum Sepolia</SelectItem>
+                        <SelectItem value={String(arbitrum.id)}>
+                          <div className="flex items-center gap-2">
+                            <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum" className="h-4 w-4" />
+                            Arbitrum
+                          </div>
+                        </SelectItem>
+                        <SelectItem value={String(arbitrumSepolia.id)}>
+                          <div className="flex items-center gap-2">
+                            <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum Sepolia" className="h-4 w-4" />
+                            Arbitrum Sepolia
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Address</span>
-                    <Badge variant="outline" className="text-xs">{chainLabel}</Badge>
+                    <Badge variant="outline" className="text-xs flex items-center gap-1">
+                      <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum" className="h-3 w-3" />
+                      {chainLabel}
+                    </Badge>
                   </div>
                   <div className="text-xs sm:text-sm font-mono break-all">{address}</div>
                   <div className="flex flex-wrap gap-2">
