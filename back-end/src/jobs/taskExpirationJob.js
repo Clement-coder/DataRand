@@ -1,45 +1,45 @@
 import { logger } from '../utils/logger.js';
 import supabase from '../config/supabaseClient.js';
 
-const SUBMISSION_TTL_MINUTES = 5; // Submissions expire after 5 minutes if not completed
+const ASSIGNMENT_TTL_MINUTES = 5; // Assignments expire after 5 minutes if not submitted
 let expirationInterval = null;
 
 /**
- * Check and expire pending submissions
+ * Check and expire pending task assignments
  */
-const checkExpiredSubmissions = async () => {
-    const expirationThreshold = new Date(Date.now() - SUBMISSION_TTL_MINUTES * 60 * 1000).toISOString();
+const checkExpiredAssignments = async () => {
+    const expirationThreshold = new Date(Date.now() - ASSIGNMENT_TTL_MINUTES * 60 * 1000).toISOString();
 
     try {
-        const { data: expiredSubmissions, error } = await supabase
-            .from('submissions')
+        const { data: expiredAssignments, error } = await supabase
+            .from('task_assignments')
             .select('id, task_id, worker_id')
-            .eq('status', 'pending')
-            .lt('created_at', expirationThreshold);
+            .in('status', ['accepted', 'in_progress'])
+            .lt('started_at', expirationThreshold);
 
         if (error) {
-            logger.error(`Error fetching expired submissions: ${error.message}`);
+            logger.error(`Error fetching expired assignments: ${error.message}`);
             return;
         }
 
-        if (expiredSubmissions && expiredSubmissions.length > 0) {
-            logger.warn(`Found ${expiredSubmissions.length} expired pending submissions.`);
+        if (expiredAssignments && expiredAssignments.length > 0) {
+            logger.warn(`Found ${expiredAssignments.length} expired task assignments.`);
 
-            const expiredSubmissionIds = expiredSubmissions.map(sub => sub.id);
+            const expiredAssignmentIds = expiredAssignments.map(a => a.id);
 
-            // Mark submissions as expired
+            // Mark assignments as abandoned
             const { error: updateError } = await supabase
-                .from('submissions')
-                .update({ status: 'expired', expired_at: new Date().toISOString() })
-                .in('id', expiredSubmissionIds);
+                .from('task_assignments')
+                .update({ status: 'abandoned', completed_at: new Date().toISOString() })
+                .in('id', expiredAssignmentIds);
 
             if (updateError) {
-                logger.error(`Error updating expired submissions: ${updateError.message}`);
+                logger.error(`Error updating expired assignments: ${updateError.message}`);
                 return;
             }
 
-            expiredSubmissions.forEach(sub => {
-                logger.info(`Submission ${sub.id} for task ${sub.task_id} by worker ${sub.worker_id} expired.`);
+            expiredAssignments.forEach(a => {
+                logger.info(`Assignment ${a.id} for task ${a.task_id} by worker ${a.worker_id} expired and marked as abandoned.`);
             });
         }
     } catch (error) {
@@ -56,10 +56,10 @@ const addTaskExpirationJob = async () => {
     }
     
     // Run immediately
-    await checkExpiredSubmissions();
+    await checkExpiredAssignments();
     
     // Run every minute
-    expirationInterval = setInterval(checkExpiredSubmissions, 60000);
+    expirationInterval = setInterval(checkExpiredAssignments, 60000);
     logger.info('Task expiration job started (runs every 60 seconds).');
 };
 
