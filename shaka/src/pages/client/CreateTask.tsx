@@ -446,9 +446,12 @@ export default function CreateTask() {
                   <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
                     <div className="flex justify-between items-center">
                       <span>Estimated Total</span>
-                      <span className="text-xl font-bold">
-                        {totalCost.toFixed(4)} ETH
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-5 w-5" />
+                        <span className="text-xl font-bold">
+                          {totalCost.toFixed(4)} ETH
+                        </span>
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
                       {formData.payoutPerWorker} ETH × {formData.requiredWorkers} workers + {platformFee.toFixed(4)} ETH fee
@@ -485,17 +488,26 @@ export default function CreateTask() {
                       <span>{workers}</span>
                     </div>
                     <hr />
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span>Subtotal</span>
-                      <span>{subtotal.toFixed(4)} ETH</span>
+                      <div className="flex items-center gap-1">
+                        <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-4 w-4" />
+                        <span>{subtotal.toFixed(4)} ETH</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span>Platform Fee (15%)</span>
-                      <span>{platformFee.toFixed(4)} ETH</span>
+                      <div className="flex items-center gap-1">
+                        <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-4 w-4" />
+                        <span>{platformFee.toFixed(4)} ETH</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between font-bold text-lg">
+                    <div className="flex justify-between items-center font-bold text-lg">
                       <span>Total Required</span>
-                      <span className="text-primary">{totalCost.toFixed(4)} ETH</span>
+                      <div className="flex items-center gap-1">
+                        <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-5 w-5" />
+                        <span className="text-primary">{totalCost.toFixed(4)} ETH</span>
+                      </div>
                     </div>
                   </div>
                 </div>
