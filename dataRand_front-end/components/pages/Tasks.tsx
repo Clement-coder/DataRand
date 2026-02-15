@@ -75,14 +75,14 @@ function Tasks() {
         console.log("Backend not available, using Supabase");
       }
 
-      // Load tasks from Supabase
+      // Load tasks from Supabase - show available and funded tasks
       let query = supabase
         .from("tasks")
         .select(`
           *,
           task_type:task_types(*)
         `)
-        .eq("status", "available")
+        .in("status", ["available", "FUNDED"])
         .order("created_at", { ascending: false });
 
       if (selectedType) {

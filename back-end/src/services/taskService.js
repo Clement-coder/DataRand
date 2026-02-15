@@ -332,8 +332,24 @@ const fundTask = async (taskId, userId) => {
 
     console.log('Task status:', task.status);
     
-    if (task.status !== 'DRAFT') {
+    if (!['DRAFT', 'FUNDED'].includes(task.status)) {
         throw new ApiError(400, `Task cannot be funded. Status is: ${task.status}`);
+    }
+
+    // If already funded, check if it's available on-chain
+    if (task.status === 'FUNDED') {
+        const isFunded = await escrowService.verifyTaskFunding(taskId);
+        if (isFunded) {
+            // Already funded on-chain, just update to available
+            const { data: updatedTask } = await supabase
+                .from('tasks')
+                .update({ status: 'available' })
+                .eq('id', taskId)
+                .select()
+                .single();
+            return updatedTask;
+        }
+        // Not funded on-chain, allow retry
     }
 
     // Get creator wallet address for transaction preparation
@@ -508,7 +524,7 @@ const getAvailableTasks = async () => {
     const { data: tasks, error } = await supabase
         .from('tasks')
         .select('*')
-        .eq('status', 'FUNDED')
+        .in('status', ['available', 'FUNDED'])
         .order('created_at', { ascending: false })
         .limit(50);
 
