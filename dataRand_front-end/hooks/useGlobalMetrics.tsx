@@ -79,9 +79,16 @@ export function GlobalMetricsProvider({ children }: { children: ReactNode }) {
       if (profileData && sessionsData) {
         const totalSessions = sessionsData.length;
         const totalMinutes = sessionsData.reduce((sum, session) => {
+          // Only count completed sessions with valid timestamps
           if (session.ended_at && session.started_at) {
-            const duration = (new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / (1000 * 60);
-            return sum + duration;
+            const startTime = new Date(session.started_at).getTime();
+            const endTime = new Date(session.ended_at).getTime();
+            
+            // Validate timestamps are reasonable
+            if (endTime > startTime && endTime - startTime < 24 * 60 * 60 * 1000) { // Max 24 hours per session
+              const duration = (endTime - startTime) / (1000 * 60);
+              return sum + duration;
+            }
           }
           return sum;
         }, 0);

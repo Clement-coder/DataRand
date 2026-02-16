@@ -46,22 +46,30 @@ export default function ComputeHistory() {
       }
 
       if (sessionsData && sessionsData.length > 0) {
-        const formattedSessions: ComputeSession[] = sessionsData.map(session => {
-          const startTime = new Date(session.started_at);
-          const endTime = session.ended_at ? new Date(session.ended_at) : new Date();
-          const duration = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-          
-          return {
-            id: session.id,
-            device: (session.device_type === 'phone' ? 'phone' : 'laptop') as 'phone' | 'laptop',
-            startTime,
-            endTime,
-            duration: Math.max(duration, 1), // Ensure minimum 1 minute
-            earnings: session.total_earned || 0,
-            cpuUsage: null,
-            status: 'completed'
-          };
-        });
+        const formattedSessions: ComputeSession[] = sessionsData
+          .filter(session => session.ended_at) // Only show completed sessions
+          .map(session => {
+            const startTime = new Date(session.started_at);
+            const endTime = new Date(session.ended_at);
+            const duration = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+            
+            // Skip sessions with invalid durations (negative or > 24 hours)
+            if (duration < 0 || duration > 24 * 60) {
+              return null;
+            }
+            
+            return {
+              id: session.id,
+              device: (session.device_type === 'phone' ? 'phone' : 'laptop') as 'phone' | 'laptop',
+              startTime,
+              endTime,
+              duration: Math.max(duration, 1), // Ensure minimum 1 minute
+              earnings: session.total_earned || 0,
+              cpuUsage: null,
+              status: 'completed'
+            };
+          })
+          .filter((session): session is ComputeSession => session !== null); // Remove invalid sessions
         
         setSessions(formattedSessions);
       } else {
