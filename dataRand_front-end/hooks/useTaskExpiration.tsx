@@ -1,25 +1,7 @@
-// Task Expiration Checker Hook
-// Periodically checks and handles expired tasks
-
-import { useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+// Task Expiration Disabled
+// Tasks no longer expire based on time
+// Payouts are released only after manual approval
 
 export function useTaskExpiration() {
-  useEffect(() => {
-    const checkExpiredTasks = async () => {
-      try {
-        await supabase.rpc("handle_expired_tasks");
-      } catch (error) {
-        console.error("Error checking expired tasks:", error);
-      }
-    };
-
-    // Check immediately on mount
-    checkExpiredTasks();
-
-    // Check every 5 minutes
-    const interval = setInterval(checkExpiredTasks, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // No-op: Task expiration has been disabled
 }

@@ -93,7 +93,6 @@ export default function CreateTask() {
     requiredWorkers: "1",
     estimatedTimeMinutes: "15",
     taskTypeId: "",
-    deadline: "",
   });
 
   // Calculate costs in ETH
@@ -277,7 +276,6 @@ export default function CreateTask() {
         category: taskTypes.find(t => t.id === formData.taskTypeId)?.name || "Image Labeling",
         payoutPerWorker: payoutETH,
         requiredWorkers: workers,
-        deadline: formData.deadline || null,
       };
 
       const result = await api.createTask(taskData) as { task?: CreatedTask };
