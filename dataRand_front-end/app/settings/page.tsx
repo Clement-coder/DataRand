@@ -94,7 +94,10 @@ export default function SettingsPage() {
         p_profile_id: profile.id
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC error details:', error);
+        throw error;
+      }
 
       toast({
         title: "Account Deleted",
@@ -106,9 +109,10 @@ export default function SettingsPage() {
       router.push('/');
     } catch (error) {
       console.error('Delete account error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete account';
       toast({
         title: "Error",
-        description: "Failed to delete account. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       setDeletingStep(0);
