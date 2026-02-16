@@ -21,7 +21,27 @@ export function RealDeviceInfo() {
   useEffect(() => {
     const detectDevice = async () => {
       // Real RAM from browser (Chrome/Edge only)
-      const ram_gb = (navigator as any).deviceMemory || 0;
+      let ram_gb = (navigator as any).deviceMemory || 0;
+      
+      // Fallback for mobile: estimate based on device characteristics
+      if (ram_gb === 0) {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {
+          // Estimate RAM based on device performance
+          const cores = navigator.hardwareConcurrency || 4;
+          const isHighEnd = cores >= 8;
+          const isMidRange = cores >= 4 && cores < 8;
+          
+          // Rough estimates for mobile devices
+          if (isHighEnd) {
+            ram_gb = 8; // High-end phones typically have 8GB+
+          } else if (isMidRange) {
+            ram_gb = 4; // Mid-range phones typically have 4-6GB
+          } else {
+            ram_gb = 2; // Budget phones typically have 2-3GB
+          }
+        }
+      }
       
       // Real CPU cores
       const cpu_cores = navigator.hardwareConcurrency || 0;
@@ -128,6 +148,11 @@ export function RealDeviceInfo() {
           {deviceInfo.ram_gb === 0 && (
             <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-2">
               ⚠️ Use Chrome or Edge browser for full device detection. Firefox/Safari have limited APIs.
+            </p>
+          )}
+          {deviceInfo.ram_gb > 0 && (navigator as any).deviceMemory === undefined && (
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+              ℹ️ RAM estimated based on device CPU cores (mobile browsers don't expose exact RAM)
             </p>
           )}
         </div>

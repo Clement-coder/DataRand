@@ -70,7 +70,24 @@ export function useComputeDevices() {
     const deviceName = `${os} ${deviceType === 'phone' ? 'Phone' : 'Computer'}`;
     
     // Get REAL device specs from browser APIs
-    const ram_gb = (navigator as any).deviceMemory || 0; // Real RAM in GB (Chrome/Edge only)
+    let ram_gb = (navigator as any).deviceMemory || 0; // Real RAM in GB (Chrome/Edge only)
+    
+    // Fallback for mobile: estimate based on device characteristics
+    if (ram_gb === 0 && isMobile) {
+      const cores = navigator.hardwareConcurrency || 4;
+      const isHighEnd = cores >= 8;
+      const isMidRange = cores >= 4 && cores < 8;
+      
+      // Rough estimates for mobile devices
+      if (isHighEnd) {
+        ram_gb = 8; // High-end phones typically have 8GB+
+      } else if (isMidRange) {
+        ram_gb = 4; // Mid-range phones typically have 4-6GB
+      } else {
+        ram_gb = 2; // Budget phones typically have 2-3GB
+      }
+    }
+    
     const cpu_cores = navigator.hardwareConcurrency || 0; // Real CPU cores
     
     // Get real storage estimate
