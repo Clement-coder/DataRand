@@ -1,9 +1,9 @@
-const { expect } = require('chai');
-const sinon = require('sinon');
-const { createTask, fundTaskAndMakeItAvailable, assignTask } = require('../src/services/taskService');
-const { Task } = require('../src/models');
-const { fundTask } = require('../src/utils/escrow');
-const { PLATFORM_FEE_PERCENTAGE } = require('../src/config/blockchain');
+import { expect } from 'chai';
+import sinon from 'sinon';
+import { createTask, fundTaskAndMakeItAvailable, assignTask } from '../src/services/taskService.js';
+import { Task } from '../src/models/index.js';
+import { fundTask } from '../src/utils/escrow.js';
+import { PLATFORM_FEE_PERCENTAGE } from '../src/config/blockchain.js';
 
 describe('Task Service', () => {
     let createTaskStub, findByIdStub, updateStub, getAssignableTasksStub, fundTaskStub;

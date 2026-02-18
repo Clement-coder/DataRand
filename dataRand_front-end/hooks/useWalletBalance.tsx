@@ -51,19 +51,19 @@ export function useWalletBalance(chainId?: number) {
   };
 
   useEffect(() => {
-    console.log("useWalletBalance mounted:", mounted);
-    console.log("useWalletBalance address:", address);
-    console.log("useWalletBalance chainId:", chainId);
-    console.log("useWalletBalance usdcBalanceData data:", usdcBalanceData);
-    console.log("useWalletBalance ethBalanceData data:", ethBalanceData);
-    if (usdcBalanceData) {
-      console.log("usdcBalanceData.value:", usdcBalanceData.value);
-      console.log("usdcBalanceData.decimals:", usdcBalanceData.decimals);
-    }
-    if (ethBalanceData) {
-      console.log("ethBalanceData.value:", ethBalanceData.value);
-      console.log("ethBalanceData.decimals:", ethBalanceData.decimals);
-    }
+    // console.log("useWalletBalance mounted:", mounted);
+    // console.log("useWalletBalance address:", address);
+    // console.log("useWalletBalance chainId:", chainId);
+    // console.log("useWalletBalance usdcBalanceData data:", usdcBalanceData);
+    // console.log("useWalletBalance ethBalanceData data:", ethBalanceData);
+    // if (usdcBalanceData) {
+    //   console.log("usdcBalanceData.value:", usdcBalanceData.value);
+    //   console.log("usdcBalanceData.decimals:", usdcBalanceData.decimals);
+    // }
+    // if (ethBalanceData) {
+    //   console.log("ethBalanceData.value:", ethBalanceData.value);
+    //   console.log("ethBalanceData.decimals:", ethBalanceData.decimals);
+    // }
   }, [mounted, address, chainId, usdcBalanceData, ethBalanceData]);
 
   if (!mounted) {

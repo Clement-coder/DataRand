@@ -193,12 +193,32 @@ export function getDeviceFingerprint() {
 
 // Get wallet address from Privy user object
 export function getPrivyWalletAddress(privyUser: any): string | null {
-  return privyUser?.wallet?.address || null;
+  if (!privyUser || !privyUser.linked_accounts) {
+    return null;
+  }
+
+  // Prioritize embedded wallet
+  const embeddedWallet = privyUser.linked_accounts.find(
+    (acc: any) => acc.type === 'wallet' && acc.wallet_type === 'embedded'
+  );
+  if (embeddedWallet) {
+    return embeddedWallet.address;
+  }
+
+  // Fallback to any other linked wallet
+  const anyWallet = privyUser.linked_accounts.find(
+    (acc: any) => acc.type === 'wallet'
+  );
+  if (anyWallet) {
+    return anyWallet.address;
+  }
+
+  return null;
 }
 
 // Check if Privy wallet is ready
 export function isPrivyWalletReady(privyUser: any): boolean {
-  return !!privyUser?.wallet?.address;
+  return !!getPrivyWalletAddress(privyUser);
 }
 
 // Get ethers provider from Privy embedded wallet

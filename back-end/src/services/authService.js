@@ -13,8 +13,9 @@ import config from '../config/index.js';
  */
 const verifyPrivyToken = async (privyAccessToken) => {
     try {
-        const verifiedUser = await privyClient.verifyAuthToken(privyAccessToken);
-        return verifiedUser;
+        const verifiedClaims = await privyClient.verifyAuthToken(privyAccessToken);
+        const user = await privyClient.users.retrieve(verifiedClaims.sub);
+        return user;
     } catch (error) {
         logger.error(`Privy token verification failed: ${error.message}`);
         throw new ApiError(401, 'Invalid Privy access token.');
@@ -47,16 +48,19 @@ const findUserByPrivyDid = async (privyDid) => {
  * @returns {Promise<object>} The newly created user object.
  */
 const createNewUser = async (privyUser) => {
-    const walletAddress = privyUser.wallet?.address || null;
-    // NOTE: Assuming the property is `walletType`. It could be `wallet_type`.
-    const isEmbeddedWallet = privyUser.wallet?.walletType === 'embedded';
+    const embeddedWallet = privyUser.linked_accounts.find(
+        (acc) => acc.type === 'wallet' && acc.wallet_type === 'embedded'
+    );
+    const externalWallet = privyUser.linked_accounts.find(
+        (acc) => acc.type === 'wallet' && acc.wallet_type !== 'embedded'
+    );
     const newUserId = uuidv4();
 
     const newUser = {
         id: newUserId,
-        privy_did: privyUser.userId,
-        wallet_address: !isEmbeddedWallet ? walletAddress : null,
-        embedded_wallet_address: isEmbeddedWallet ? walletAddress : null,
+        privy_did: privyUser.id,
+        wallet_address: externalWallet ? externalWallet.address : null,
+        embedded_wallet_address: embeddedWallet ? embeddedWallet.address : null,
     };
 
     const { data, error } = await supabase
@@ -68,17 +72,18 @@ const createNewUser = async (privyUser) => {
     if (error) {
         logger.error(`Failed to create user in DB: ${error.message}`);
         if (error.code === '23505') { // unique_violation
-             logger.warn(`User with privy_did ${privyUser.userId} already exists.`);
-             return findUserByPrivyDid(privyUser.userId);
+             logger.warn(`User with privy_did ${privyUser.id} already exists.`);
+             return findUserByPrivyDid(privyUser.id);
         }
         throw new ApiError(500, 'Failed to save user to database.');
     }
 
     // Also create a corresponding profile
+    const emailAccount = privyUser.linked_accounts.find(acc => acc.type === 'email');
     const { error: profileError } = await supabase.from('profiles').insert({
         id: newUserId, // Use the same ID as the user
-        auth_id: privyUser.userId,
-        email: privyUser.email?.address || null,
+        auth_id: privyUser.id,
+        email: emailAccount ? emailAccount.address : null,
     });
 
     if (profileError) {

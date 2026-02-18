@@ -14,43 +14,49 @@ const loginOrRegister = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Device fingerprint is required.');
     }
 
-    // 1. Verify the token with Privy
+    // 1. Verify the token with Privy and get the full user object
     const privyUser = await authService.verifyPrivyToken(privyAccessToken);
 
     // 2. Find or create the user in our database
-    let user = await authService.findUserByPrivyDid(privyUser.userId);
+    let user = await authService.findUserByPrivyDid(privyUser.id);
     if (!user) {
         user = await authService.createNewUser(privyUser);
         logger.info(`New user created with Privy DID: ${user.privy_did}`);
     }
 
     // 3. Update device fingerprint and wallet address
-    const walletAddress = privyUser.wallet?.address || null;
-    const isEmbedded = privyUser.wallet?.walletType === 'embedded';
+    const embeddedWallet = privyUser.linked_accounts.find(
+        (acc) => acc.type === 'wallet' && acc.wallet_type === 'embedded'
+    );
+    const externalWallet = privyUser.linked_accounts.find(
+        (acc) => acc.type === 'wallet' && acc.wallet_type !== 'embedded'
+    );
 
     const updatePayload = {
         last_fingerprint: deviceFingerprint,
         last_login_at: new Date(),
     };
 
-    if (walletAddress) {
-        if (isEmbedded) {
-            updatePayload.embedded_wallet_address = walletAddress;
+    if (embeddedWallet) {
+        updatePayload.embedded_wallet_address = embeddedWallet.address;
+    }
+    if (externalWallet) {
+        updatePayload.wallet_address = externalWallet.address;
+    }
+
+    if (updatePayload.embedded_wallet_address || updatePayload.wallet_address) {
+        const { error: updateError } = await supabase
+            .from('users')
+            .update(updatePayload)
+            .eq('id', user.id);
+
+        if (updateError) {
+            logger.error(`Failed to update login metadata: ${updateError.message}`);
         } else {
-            updatePayload.wallet_address = walletAddress;
+            logger.info(`Updated wallet addresses for user ${user.id}`);
         }
     }
 
-    const { error: updateError } = await supabase
-        .from('users')
-        .update(updatePayload)
-        .eq('id', user.id);
-
-    if (updateError) {
-        logger.error(`Failed to update login metadata: ${updateError.message}`);
-    } else if (walletAddress) {
-        logger.info(`Updated wallet address for user ${user.id}: ${walletAddress}`);
-    }
 
     // 4. Generate a local JWT for our API
     const localToken = authService.generateLocalJWT(user);
