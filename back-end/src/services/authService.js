@@ -5,6 +5,7 @@ import supabase from '../config/supabaseClient.js';
 import { ApiError } from '../utils/apiError.js';
 import { logger } from '../utils/logger.js';
 import config from '../config/index.js';
+import { debugPrivyToken } from '../utils/debugPrivy.js';
 
 /**
  * Verifies the Privy access token and retrieves the user's Privy data.
@@ -14,6 +15,10 @@ import config from '../config/index.js';
 const verifyPrivyToken = async (privyAccessToken) => {
     try {
         logger.info(`Attempting to verify Privy token...`);
+        
+        // Debug: decode token first
+        debugPrivyToken(privyAccessToken);
+        
         const verifiedClaims = await privyClient.verifyAuthToken(privyAccessToken);
         logger.info(`Token verified, claims: ${JSON.stringify(verifiedClaims)}`);
         
