@@ -16,7 +16,15 @@ const verifyPrivyToken = async (privyAccessToken) => {
         logger.info(`Attempting to verify Privy token...`);
         const verifiedClaims = await privyClient.verifyAuthToken(privyAccessToken);
         logger.info(`Token verified, claims: ${JSON.stringify(verifiedClaims)}`);
-        const user = await privyClient.users.retrieve(verifiedClaims.sub);
+        
+        // Extract user ID from sub (may be "did:privy:xxx" format)
+        let userId = verifiedClaims.sub;
+        if (userId.startsWith('did:privy:')) {
+            userId = userId.replace('did:privy:', '');
+        }
+        logger.info(`Fetching user with ID: ${userId}`);
+        
+        const user = await privyClient.users.retrieve(userId);
         logger.info(`User retrieved: ${user.id}`);
         return user;
     } catch (error) {
@@ -24,12 +32,15 @@ const verifyPrivyToken = async (privyAccessToken) => {
         logger.error(`Error stack: ${error.stack}`);
         
         // If token verification fails, try to extract user ID from token directly
-        // This is a fallback for cases where the token is valid but verification fails due to network/clock issues
         try {
             const decoded = jwt.decode(privyAccessToken);
             if (decoded && decoded.sub) {
-                logger.info(`Fallback: extracting user ID from token: ${decoded.sub}`);
-                const user = await privyClient.users.retrieve(decoded.sub);
+                let fallbackUserId = decoded.sub;
+                if (fallbackUserId.startsWith('did:privy:')) {
+                    fallbackUserId = fallbackUserId.replace('did:privy:', '');
+                }
+                logger.info(`Fallback: extracting user ID from token: ${fallbackUserId}`);
+                const user = await privyClient.users.retrieve(fallbackUserId);
                 return user;
             }
         } catch (fallbackError) {
