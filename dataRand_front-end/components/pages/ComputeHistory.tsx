@@ -46,11 +46,11 @@ export default function ComputeHistory() {
       }
 
       if (sessionsData && sessionsData.length > 0) {
-        const formattedSessions: ComputeSession[] = sessionsData
-          .filter(session => session.ended_at) // Only show completed sessions
+        const formattedSessions = sessionsData
+          .filter((s): s is NonNullable<typeof s> => s !== null && !!s.ended_at)
           .map(session => {
             const startTime = new Date(session.started_at);
-            const endTime = new Date(session.ended_at);
+            const endTime = new Date(session.ended_at!);
             const duration = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
             
             // Skip sessions with invalid durations (negative or > 24 hours)
@@ -67,9 +67,9 @@ export default function ComputeHistory() {
               earnings: session.total_earned || 0,
               cpuUsage: null,
               status: 'completed'
-            };
+            } as ComputeSession;
           })
-          .filter((session): session is ComputeSession => session !== null); // Remove invalid sessions
+          .filter((s): s is ComputeSession => s !== null);
         
         setSessions(formattedSessions);
       } else {
