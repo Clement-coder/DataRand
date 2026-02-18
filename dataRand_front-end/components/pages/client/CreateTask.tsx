@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Image, Headphones, Brain, Plus, DollarSign, Users, Globe, X, Video, Info, FileText, Clock, Wallet, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
+import { ArrowLeft, Loader2, Image, Headphones, Brain, Plus, DollarSign, Users, Globe, X, Video, Info, FileText, Clock, Wallet, CheckCircle, AlertCircle, ArrowRight, Settings } from "lucide-react";
 import { api, CONFIG, getDeviceFingerprint, getPrivyWalletAddress } from "@/lib/datarand";
 import { arbitrumSepolia } from "wagmi/chains";
 
@@ -106,15 +106,9 @@ export default function CreateTask() {
   const ensureBackendAuth = useCallback(async () => {
     setIsPreparingSession(true);
     setBackendAuthError(null);
-    const existingToken =
-      typeof window !== "undefined" ? localStorage.getItem("datarand_token") : null;
-    if (existingToken) {
-      setBackendAuthReady(true);
-      setIsPreparingSession(false);
-      return true;
-    }
 
     try {
+      // Always get a fresh Privy access token
       const accessToken = await getAccessToken();
       if (!accessToken) {
         setBackendAuthReady(false);
@@ -123,6 +117,9 @@ export default function CreateTask() {
         return false;
       }
 
+      console.log("Privy access token obtained:", accessToken?.substring(0, 20) + "...");
+      
+      // Login with fresh token
       const loginResult = await api.login(accessToken, getDeviceFingerprint());
       if (loginResult?.token && typeof window !== "undefined") {
         localStorage.setItem("datarand_token", loginResult.token);
@@ -156,11 +153,18 @@ export default function CreateTask() {
 
   // Get Privy embedded wallet address
   useEffect(() => {
+    console.log("CreateTask useEffect - privyUser:", privyUser);
+    console.log("CreateTask useEffect - wallets:", wallets);
+
     const address = getPrivyWalletAddress(privyUser);
+    console.log("CreateTask useEffect - getPrivyWalletAddress result:", address);
+
     if (address) {
       const matchingWallet = wallets.find(
         (wallet) => wallet.address.toLowerCase() === address.toLowerCase()
       );
+      console.log("CreateTask useEffect - matchingWallet:", matchingWallet);
+      
       setWalletAddress(address);
       setWalletReady(Boolean(matchingWallet));
       if (matchingWallet) {
@@ -171,6 +175,7 @@ export default function CreateTask() {
       setWalletReady(false);
     }
   }, [privyUser, wallets]);
+
 
   useEffect(() => {
     if (!authLoading && !profile) {
@@ -650,14 +655,24 @@ export default function CreateTask() {
 
                 {/* Wallet Status */}
                 {!walletReady ? (
-                  <div className="p-3 sm:p-4 rounded-lg border border-amber-500/50 bg-amber-500/10">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm sm:text-base">No embedded wallet found</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">Please create a wallet in your account settings</p>
+                  <div className="space-y-3">
+                    <div className="p-3 sm:p-4 rounded-lg border border-amber-500/50 bg-amber-500/10">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm sm:text-base">No embedded wallet found</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Create a wallet to fund tasks and receive payments</p>
+                        </div>
                       </div>
                     </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => router.push('/settings')}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Go to Settings
+                    </Button>
                   </div>
                 ) : (
                   <div className="p-3 sm:p-4 rounded-lg border border-green-500/50 bg-green-500/10">

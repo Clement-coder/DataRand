@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -17,16 +17,23 @@ import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { getPrivyWalletAddress } from "@/lib/datarand";
 import { 
   User, Bell, Palette, Globe, Smartphone, Shield, 
-  Save, AlertTriangle 
+  Save, AlertTriangle, Wallet, Plus, Loader2
 } from "lucide-react";
 
 export default function SettingsPage() {
   const { profile, updateProfile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const { user: privyUser, createWallet } = usePrivy();
+  const { wallets } = useWallets();
+  
   const [loading, setLoading] = useState(false);
+  const [creatingWallet, setCreatingWallet] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deletingStep, setDeletingStep] = useState(0);
@@ -46,6 +53,30 @@ export default function SettingsPage() {
     autoAcceptTasks: false,
     showEarnings: true,
   });
+
+  useEffect(() => {
+    const address = getPrivyWalletAddress(privyUser);
+    setWalletAddress(address);
+  }, [privyUser, wallets]);
+
+  const handleCreateWallet = async () => {
+    setCreatingWallet(true);
+    try {
+      await createWallet();
+      toast({
+        title: "Success",
+        description: "Embedded wallet created successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create wallet",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingWallet(false);
+    }
+  };
 
   const handleProfileUpdate = async () => {
     setLoading(true);
@@ -337,6 +368,62 @@ export default function SettingsPage() {
             >
               Delete Account
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Wallet Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Wallet className="h-5 w-5" />
+              Embedded Wallet
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {walletAddress ? (
+              <div className="p-4 rounded-lg border border-green-500/50 bg-green-500/10">
+                <div className="flex items-start gap-3">
+                  <Wallet className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">Wallet Active</p>
+                    <p className="text-xs text-muted-foreground mt-1 break-all">
+                      {walletAddress}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-4 rounded-lg border border-amber-500/50 bg-amber-500/10">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">No Wallet Found</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Create an embedded wallet to fund tasks and receive payments
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleCreateWallet} 
+                  disabled={creatingWallet}
+                  className="w-full"
+                >
+                  {creatingWallet ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating Wallet...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Embedded Wallet
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 

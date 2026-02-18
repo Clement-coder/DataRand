@@ -13,11 +13,15 @@ import config from '../config/index.js';
  */
 const verifyPrivyToken = async (privyAccessToken) => {
     try {
+        logger.info(`Attempting to verify Privy token...`);
         const verifiedClaims = await privyClient.verifyAuthToken(privyAccessToken);
+        logger.info(`Token verified, claims: ${JSON.stringify(verifiedClaims)}`);
         const user = await privyClient.users.retrieve(verifiedClaims.sub);
+        logger.info(`User retrieved: ${user.id}`);
         return user;
     } catch (error) {
         logger.error(`Privy token verification failed: ${error.message}`);
+        logger.error(`Error stack: ${error.stack}`);
         throw new ApiError(401, 'Invalid Privy access token.');
     }
 };

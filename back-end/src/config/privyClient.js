@@ -8,6 +8,8 @@ if (!privyAppId || !privyAppSecret) {
     throw new Error('Privy App ID or Secret is not defined in the environment variables.');
 }
 
+console.log(`Initializing Privy client with App ID: ${privyAppId}`);
+
 const privyClient = new PrivyClient(privyAppId, privyAppSecret);
 
 export default privyClient;

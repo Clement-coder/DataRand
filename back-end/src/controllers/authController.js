@@ -7,6 +7,8 @@ import supabase from '../config/supabaseClient.js';
 const loginOrRegister = asyncHandler(async (req, res) => {
     const { privyAccessToken, deviceFingerprint } = req.body;
 
+    logger.info(`Login attempt with fingerprint: ${deviceFingerprint}`);
+
     if (!privyAccessToken) {
         throw new ApiError(400, 'Privy access token is required.');
     }
@@ -14,6 +16,7 @@ const loginOrRegister = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Device fingerprint is required.');
     }
 
+    logger.info(`Verifying Privy token...`);
     // 1. Verify the token with Privy and get the full user object
     const privyUser = await authService.verifyPrivyToken(privyAccessToken);
 
