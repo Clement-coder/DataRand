@@ -9,6 +9,10 @@ if (!privyAppId || !privyAppSecret) {
 }
 
 console.log(`Initializing Privy client with App ID: ${privyAppId}`);
+if (typeof privyAppSecret !== 'string' || privyAppSecret.length < 10) {
+    throw new Error(`Invalid Privy App Secret. The secret is either not a string or is too short. Value: '${privyAppSecret}'`);
+}
+console.log('Privy App Secret appears to be valid.');
 
 const privyClient = new PrivyClient(privyAppId, privyAppSecret);
 
