@@ -83,7 +83,7 @@ export default function CreateTask() {
   const [backendAuthError, setBackendAuthError] = useState<string | null>(null);
   
   // Use wallet balance hook
-  const { ethBalance, usdcBalance, ethSymbol, usdcSymbol, isLoading: balanceLoading, refetch: refetchBalance } = useWalletBalance(arbitrumSepolia.id);
+  const { ethBalance, ethBalanceUsd, usdcBalance, ethSymbol, usdcSymbol, isLoading: balanceLoading, refetch: refetchBalance } = useWalletBalance(arbitrumSepolia.id);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -689,9 +689,16 @@ export default function CreateTask() {
                           <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" alt="USDC" className="h-4 w-4" />
                           <p className="font-bold text-sm sm:text-base">{usdcBalance} {usdcSymbol}</p>
                         </div>
-                        <div className="flex items-center gap-2 justify-start sm:justify-end">
-                          <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-4 w-4" />
-                          <p className="font-bold text-sm sm:text-base">{ethBalance} {ethSymbol}</p>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2 justify-start sm:justify-end">
+                            <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-4 w-4" />
+                            <p className="font-bold text-sm sm:text-base">{ethBalance} {ethSymbol}</p>
+                          </div>
+                          {ethBalanceUsd > 0 && (
+                            <p className="text-xs text-muted-foreground text-left sm:text-right">
+                              ≈ ${ethBalanceUsd.toFixed(2)} USD
+                            </p>
+                          )}
                         </div>
                         <p className={`text-xs sm:text-sm ${hasEnoughBalance ? "text-green-600" : "text-red-500"}`}>
                           {hasEnoughBalance ? "✓ Sufficient" : "⚠️ Insufficient"}

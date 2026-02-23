@@ -137,7 +137,7 @@ function Earnings() {
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: txHash,
   });
-  const { usdcBalance, ethBalance, usdcSymbol, ethSymbol, isLoading: walletLoading, refetch: refetchWallet, usdcDecimals, ethDecimals } = useWalletBalance(selectedChainId);
+  const { usdcBalance, ethBalance, ethBalanceUsd, usdcSymbol, ethSymbol, isLoading: walletLoading, refetch: refetchWallet, usdcDecimals, ethDecimals } = useWalletBalance(selectedChainId);
   
   // Derived values
   const privyWalletAddress = privyUser?.wallet?.address || null;
@@ -513,15 +513,24 @@ function Earnings() {
               <CardContent className="p-3 sm:p-6 pt-0 space-y-2">
                 <div className="flex items-center gap-2">
                   <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" alt="USDC" className="h-5 w-5 flex-shrink-0" />
-                  <p className="text-xl sm:text-2xl font-display font-bold">
-                    {usdcBalance} {usdcSymbol}
-                  </p>
+                  <div>
+                    <p className="text-xl sm:text-2xl font-display font-bold">
+                      {usdcBalance} {usdcSymbol}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-5 w-5 flex-shrink-0" />
-                  <p className="text-xl sm:text-2xl font-display font-bold">
-                    {ethBalance} {ethSymbol}
-                  </p>
+                  <div>
+                    <p className="text-xl sm:text-2xl font-display font-bold">
+                      {ethBalance} {ethSymbol}
+                    </p>
+                    {ethBalanceUsd > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        ≈ ${ethBalanceUsd.toFixed(2)} USD
+                      </p>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
