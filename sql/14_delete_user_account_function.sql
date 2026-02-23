@@ -8,15 +8,20 @@ security definer
 as $$
 begin
   -- Delete in order to respect foreign key constraints
+  -- Only delete from tables that exist
   
-  -- Delete notifications
+  -- Delete notifications (if table exists)
   delete from public.notifications where user_id = p_profile_id;
   
-  -- Delete withdrawal requests
-  delete from public.withdrawal_requests where profile_id = p_profile_id;
+  -- Delete withdrawal requests (if table exists)
+  if exists (select from information_schema.tables where table_schema = 'public' and table_name = 'withdrawal_requests') then
+    delete from public.withdrawal_requests where profile_id = p_profile_id;
+  end if;
   
-  -- Delete transactions
-  delete from public.transactions where profile_id = p_profile_id;
+  -- Delete transactions (if table exists)
+  if exists (select from information_schema.tables where table_schema = 'public' and table_name = 'transactions') then
+    delete from public.transactions where profile_id = p_profile_id;
+  end if;
   
   -- Delete task assignments (this will cascade to related records)
   delete from public.task_assignments where worker_id = p_profile_id;
