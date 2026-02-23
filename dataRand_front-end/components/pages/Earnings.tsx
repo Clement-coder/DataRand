@@ -59,7 +59,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWalletBalance } from "@/hooks/useWalletBalance";
 import { useChainId, useChains, useSendTransaction, useSwitchChain, useWaitForTransactionReceipt } from "wagmi";
 import QRCode from "react-qr-code";
-import { arbitrum, arbitrumSepolia } from "wagmi/chains";
+import { arbitrumSepolia } from "wagmi/chains";
 import { formatUnits } from "viem";
 
 const isHexAddress = (value: string) => /^0x[a-fA-F0-9]{40}$/.test(value.trim());
@@ -628,37 +628,11 @@ function Earnings() {
                 <div className="rounded-lg border border-border/60 p-3 sm:p-4 space-y-3 bg-muted/20">
                   <div className="space-y-2">
                     <Label className="text-xs sm:text-sm">Network</Label>
-                    <Select
-                      value={String(selectedChainId)}
-                      onValueChange={(value) => {
-                        const newChainId = Number(value);
-                        console.log('Chain selector changed to:', newChainId);
-                        setSelectedChainId(newChainId);
-                        setTransactions([]); // Clear old transactions
-                        setLoading(true); // Show loading
-                        if (chainId !== newChainId) {
-                          switchChain({ chainId: newChainId });
-                        }
-                      }}
-                    >
-                      <SelectTrigger disabled={isSwitching} className="text-xs sm:text-sm">
-                        <SelectValue placeholder="Select network" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={String(arbitrum.id)}>
-                          <div className="flex items-center gap-2">
-                            <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum" className="h-4 w-4" />
-                            Arbitrum
-                          </div>
-                        </SelectItem>
-                        <SelectItem value={String(arbitrumSepolia.id)}>
-                          <div className="flex items-center gap-2">
-                            <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum Sepolia" className="h-4 w-4" />
-                            Arbitrum Sepolia
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+                      <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum Sepolia" className="h-4 w-4" />
+                      <span className="text-sm font-medium">Arbitrum Sepolia</span>
+                      <Badge variant="secondary" className="text-xs ml-auto">Testnet</Badge>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Address</span>

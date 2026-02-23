@@ -1,5 +1,5 @@
 import type { PrivyClientConfig } from "@privy-io/react-auth";
-import { base, baseSepolia, arbitrum, arbitrumSepolia } from "wagmi/chains";
+import { arbitrumSepolia } from "wagmi/chains";
 
 export const privyConfig: PrivyClientConfig = {
   embeddedWallets: {
@@ -15,9 +15,8 @@ export const privyConfig: PrivyClientConfig = {
     logo: '/datarand-logo.svg',
   },
 
-  defaultChain: arbitrum,
+  defaultChain: arbitrumSepolia,
   supportedChains: [
-    arbitrum,
     arbitrumSepolia,
   ],
 };
