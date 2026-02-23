@@ -19,7 +19,7 @@ const getNetworkStats = asyncHandler(async (req, res) => {
  * Register or update a compute device
  */
 const registerDevice = asyncHandler(async (req, res) => {
-    const userId = req.user.profileId;
+    const userId = req.user.id;
     const device = await networkService.registerDevice(userId, req.body);
     
     res.status(200).json({
@@ -33,7 +33,7 @@ const registerDevice = asyncHandler(async (req, res) => {
  * Send heartbeat to keep device active
  */
 const sendHeartbeat = asyncHandler(async (req, res) => {
-    const userId = req.user.profileId;
+    const userId = req.user.id;
     const { deviceId } = req.params;
     
     const device = await networkService.sendHeartbeat(userId, deviceId);
@@ -49,7 +49,7 @@ const sendHeartbeat = asyncHandler(async (req, res) => {
  * Deactivate a device
  */
 const deactivateDevice = asyncHandler(async (req, res) => {
-    const userId = req.user.profileId;
+    const userId = req.user.id;
     const { deviceId } = req.params;
     
     const device = await networkService.deactivateDevice(userId, deviceId);
@@ -65,7 +65,7 @@ const deactivateDevice = asyncHandler(async (req, res) => {
  * Get user's devices
  */
 const getUserDevices = asyncHandler(async (req, res) => {
-    const userId = req.user.profileId;
+    const userId = req.user.id;
     const devices = await networkService.getUserDevices(userId);
     
     res.status(200).json({
