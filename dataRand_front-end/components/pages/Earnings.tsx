@@ -186,7 +186,7 @@ function Earnings() {
 
       console.log('Fetching transactions for:', walletAddress);
 
-      // Use Alchemy's getAssetTransfers method
+      // Fetch outgoing transactions (external and erc20 only for Arbitrum)
       const response = await fetch(alchemyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,7 +198,7 @@ function Earnings() {
             fromBlock: '0x0',
             toBlock: 'latest',
             fromAddress: walletAddress,
-            category: ['external', 'internal', 'erc20'],
+            category: ['external', 'erc20'],
             withMetadata: true,
             maxCount: '0x64'
           }]
@@ -219,7 +219,7 @@ function Earnings() {
             fromBlock: '0x0',
             toBlock: 'latest',
             toAddress: walletAddress,
-            category: ['external', 'internal', 'erc20'],
+            category: ['external', 'erc20'],
             withMetadata: true,
             maxCount: '0x64'
           }]
@@ -521,7 +521,7 @@ function Earnings() {
               </CardHeader>
               <CardContent className="p-3 sm:p-6 pt-0 space-y-2">
                 <div className="flex items-center gap-2">
-                  <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" alt="USDC" className="h-5 w-5 flex-shrink-0" />
+                  <div className="h-5 w-5 flex-shrink-0 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">U</div>
                   <div>
                     <p className="text-xl sm:text-2xl font-display font-bold">
                       {usdcBalance} {usdcSymbol}
@@ -529,7 +529,7 @@ function Earnings() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-5 w-5 flex-shrink-0" />
+                  <div className="h-5 w-5 flex-shrink-0 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold">Ξ</div>
                   <div>
                     <p className="text-xl sm:text-2xl font-display font-bold">
                       {ethBalance} {ethSymbol}
@@ -553,7 +553,7 @@ function Earnings() {
               </CardHeader>
               <CardContent className="p-3 sm:p-6 pt-0">
                 <div className="flex items-center gap-2">
-                  <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" alt="USDC" className="h-5 w-5" />
+                  <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">U</div>
                   <p className="text-xl sm:text-3xl font-display font-bold">
                     ${stats.pending.toFixed(2)}
                   </p>
@@ -575,7 +575,7 @@ function Earnings() {
               </CardHeader>
               <CardContent className="p-3 sm:p-6 pt-0">
                 <div className="flex items-center gap-2">
-                  <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" alt="USDC" className="h-5 w-5" />
+                  <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">U</div>
                   <p className="text-xl sm:text-3xl font-display font-bold">
                   ${totalEarnings.toFixed(2)}
                 </p>
@@ -592,7 +592,7 @@ function Earnings() {
               </CardHeader>
               <CardContent className="p-3 sm:p-6 pt-0">
                 <div className="flex items-center gap-2">
-                  <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" alt="USDC" className="h-5 w-5" />
+                  <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">U</div>
                   <p className="text-xl sm:text-3xl font-display font-bold text-secondary">
                     ${educationFundContribution.toFixed(2)}
                   </p>
@@ -647,7 +647,7 @@ function Earnings() {
                   <div className="space-y-2">
                     <Label className="text-xs sm:text-sm">Network</Label>
                     <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
-                      <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum Sepolia" className="h-4 w-4" />
+                      <div className="h-4 w-4 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">A</div>
                       <span className="text-sm font-medium">Arbitrum Sepolia</span>
                       <Badge variant="secondary" className="text-xs ml-auto">Testnet</Badge>
                     </div>
@@ -655,7 +655,7 @@ function Earnings() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Address</span>
                     <Badge variant="outline" className="text-xs flex items-center gap-1">
-                      <img src="https://cryptologos.cc/logos/arbitrum-arb-logo.png" alt="Arbitrum" className="h-3 w-3" />
+                      <div className="h-4 w-4 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">A</div>
                       {chainLabel}
                     </Badge>
                   </div>
@@ -684,13 +684,13 @@ function Earnings() {
                     {balanceVisible ? (
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" alt="USDC" className="h-5 w-5" />
+                          <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">U</div>
                           <p className="text-lg sm:text-xl font-display font-bold">
                             {walletLoading ? "..." : `${parseFloat(usdcBalance).toFixed(2)} ${usdcSymbol}`}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="ETH" className="h-5 w-5" />
+                          <div className="h-5 w-5 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold">Ξ</div>
                           <p className="text-lg sm:text-xl font-display font-bold">
                             {walletLoading ? "..." : `${parseFloat(ethBalance).toFixed(4)} ${ethSymbol}`}
                           </p>
