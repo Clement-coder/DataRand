@@ -153,17 +153,12 @@ export default function CreateTask() {
 
   // Get Privy embedded wallet address
   useEffect(() => {
-    console.log("CreateTask useEffect - privyUser:", privyUser);
-    console.log("CreateTask useEffect - wallets:", wallets);
-
-    const address = getPrivyWalletAddress(privyUser);
-    console.log("CreateTask useEffect - getPrivyWalletAddress result:", address);
-
+    const address = privyUser?.wallet?.address || privyUser?.smartWallet?.address || null;
+    
     if (address) {
       const matchingWallet = wallets.find(
         (wallet) => wallet.address.toLowerCase() === address.toLowerCase()
       );
-      console.log("CreateTask useEffect - matchingWallet:", matchingWallet);
       
       setWalletAddress(address);
       setWalletReady(Boolean(matchingWallet));
@@ -174,7 +169,7 @@ export default function CreateTask() {
       setWalletAddress(null);
       setWalletReady(false);
     }
-  }, [privyUser, wallets]);
+  }, [privyUser, wallets, refetchBalance]);
 
 
   useEffect(() => {
